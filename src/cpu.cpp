@@ -7,3 +7,10 @@
  ****************************************************************************/
 
 #include "cpu.h"
+
+ProcessorStatus::ProcessorStatus(uint8_t value): Negative(*this), Overflow(*this),
+                                    BrkExecuted(*this), Decimal(*this),
+                                    IrqDisabled(*this), Zero(*this),
+                                    Carry(*this) {
+	P = value; // 初值
+}

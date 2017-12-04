@@ -1,7 +1,18 @@
 cmake_minimum_required(VERSION 3.8)
-project(fcemu)
+project(FCEmu)
+include(ExternalProject)
 
 set(CMAKE_CXX_STANDARD 14)
 
+ExternalProject_Add(
+        googletest
+        PREFIX lib
+        GIT_REPOSITORY https://github.com/google/googletest.git
+)
+
 set(SOURCE_FILES main.cpp cpu.cpp cpu.h)
-add_executable(fcemu ${SOURCE_FILES})
+add_library(FC ${SOURCE_FILES})
+add_executable(FCemu ${SOURCE_FILES})
+target_link_libraries(FCemu FC)
+
+add_subdirectory(tests)
