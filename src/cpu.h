@@ -17,37 +17,24 @@ class ProcessorStatus;
 template <size_t pos>
 class PSField {
 public:
-	PSField(ProcessorStatus &PS) : PS(PS) {}
-
+	PSField(uint8_t& P) : P(P) {}
 	inline PSField &operator=(bool b) {
 		assert(pos >= 0 && pos < 8);
 		b ? SetBit() : ClearBit();
 		return *this;
 	}
-	inline operator bool() const;
-	inline void SetBit();
-	inline void ClearBit();
+	inline operator bool() const { return static_cast<bool>((P >> pos) & 1); };
+	inline void SetBit() { P |= 1u << pos; }
+	inline void ClearBit() { P &= ~1u << pos; }
 
 private:
-	ProcessorStatus &PS;
+	uint8_t &P;
 };
 
 class ProcessorStatus {
 public:
-
 	ProcessorStatus(uint8_t value = 0x34);
-
-	friend class PSField<0>;
-	friend class PSField<1>;
-	friend class PSField<2>;
-	friend class PSField<3>;
-	friend class PSField<4>;
-	friend class PSField<6>;
-	friend class PSField<7>;
-
-	inline operator uint8_t() const {
-		return P;
-	}
+	inline operator uint8_t() const { return P; }
 	inline ProcessorStatus&operator=(uint8_t value) {
 		P = value;
 		return *this;
@@ -63,15 +50,6 @@ public:
 private:
 	uint8_t P;
 };
-
-template <size_t pos>
-PSField<pos>::operator bool() const { return static_cast<bool>((PS.P >> pos) & 1); }
-
-template <size_t pos>
-void PSField<pos>::SetBit() { PS.P |= uint8_t(1) << pos; }
-
-template <size_t pos>
-void PSField<pos>::ClearBit() { PS.P &= ~(uint8_t(1) << pos); }
 
 
 class CPU {
@@ -94,6 +72,9 @@ public:
 		indexIndirect,                  // 零页地址+X后（高字节不进位）间接寻址
 		indirectIndex                   // 零页间接寻址+Y得到新地址
 	};
+
+	CPU(): P(0x34), A(0), X(0), Y(0), SP(0xfd) {}; // Power Up
+
 private:
 	uint16_t PC; // 程序计数器
 	uint8_t SP; // 栈指针，$0100-$01ff

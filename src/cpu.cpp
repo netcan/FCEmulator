@@ -8,9 +8,10 @@
 
 #include "cpu.h"
 
-ProcessorStatus::ProcessorStatus(uint8_t value): Negative(*this), Overflow(*this),
-                                    BrkExecuted(*this), Decimal(*this),
-                                    IrqDisabled(*this), Zero(*this),
-                                    Carry(*this) {
+ProcessorStatus::ProcessorStatus(uint8_t value): Negative(this->P), Overflow(this->P),
+                                    BrkExecuted(this->P), Decimal(this->P),
+                                    IrqDisabled(this->P), Zero(this->P),
+                                    Carry(this->P) {
 	P = value; // 初值
 }
+

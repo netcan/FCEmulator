@@ -23,7 +23,17 @@ TEST(ProcessorStatusCheck, test_value) {
 
 TEST(ProcessorStatusCheck, test_field) {
 // 测试Flag位
-	ProcessorStatus P = 0;
+	ProcessorStatus P = 0xff;
+	EXPECT_TRUE(P.Carry && P.Zero && P.IrqDisabled
+	            && P.Decimal && P.BrkExecuted &&
+	            P.Overflow && P.Negative);
+
+	P = 0;
+	EXPECT_EQ(P, 0);
+	EXPECT_FALSE(P.Carry || P.Zero || P.IrqDisabled
+	             || P.Decimal || P.BrkExecuted ||
+	             P.Overflow || P.Negative);
+
 
 	P.Negative = 0;
 	EXPECT_FALSE(P.Negative);
@@ -46,3 +56,4 @@ TEST(ProcessorStatusCheck, test_field) {
 	EXPECT_TRUE(P.IrqDisabled);
 	EXPECT_EQ(P, 0xc4);
 }
+
