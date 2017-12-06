@@ -8,9 +8,7 @@
 
 #ifndef FCEMU_CPU_H
 #define FCEMU_CPU_H
-#include <cstdint>
-#include <cstdio>
-#include <cassert>
+#include "Base.h"
 
 class ProcessorStatus;
 

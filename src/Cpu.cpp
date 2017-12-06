@@ -6,7 +6,7 @@
  > Created Time: 2017-12-03 -- 20:31
  ****************************************************************************/
 
-#include "cpu.h"
+#include "Cpu.h"
 
 ProcessorStatus::ProcessorStatus(uint8_t value): Negative(this->P), Overflow(this->P),
                                     BrkExecuted(this->P), Decimal(this->P),

@@ -7,9 +7,7 @@
  ****************************************************************************/
 
 #include "gtest/gtest.h"
-#include "../cpu.h"
-#include <iostream>
-#include <vector>
+#include "../Base.h"
 
 TEST(ProcessorStatusCheck, test_value) {
 // 测试初值
@@ -57,3 +55,28 @@ TEST(ProcessorStatusCheck, test_field) {
 	EXPECT_EQ(P, 0xc4);
 }
 
+TEST(BaseTest, test_bit_opt) {
+	// 测试获取高低位
+	uint8_t value = 0xff;
+	for (size_t i = 0; i < 8; ++i)
+		EXPECT_TRUE(GetBit(value, i));
+	EXPECT_EQ(GetUpperBits(value), 0x0f);
+	EXPECT_EQ(GetLowerBits(value), 0x0f);
+
+	value = 0;
+	for (size_t i = 0; i < 8; ++i)
+		EXPECT_FALSE(GetBit(value, i));
+	EXPECT_EQ(GetUpperBits(value), 0x00);
+	EXPECT_EQ(GetLowerBits(value), 0x00);
+
+	// 测试拼接高低位
+	EXPECT_EQ(JointBits(0x3, 0xf), 0x3f);
+}
+
+TEST(CartridgeTest, test_loading) {
+	Cartridge cart;
+	EXPECT_TRUE(cart.LoadFile("./nestest.nes"));
+	EXPECT_TRUE(cart.PrintHeader());
+
+
+}

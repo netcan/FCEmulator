@@ -27,9 +27,9 @@ CPU采用改造的8位6502处理器（指令集一致），由Ricoh生产的NMOS
 - `0x6000-0x7fff`，SRAM，用于访问卡带中的RAM来保存游戏用。
 - `0x8000-0xffff`，这块区域被用于访问卡带的程序ROM，程序ROM以16KB为一个单位块(*bank*)，又可以细分为2块：
 	- `0x8000-0xbfff`，只有一块的时候
-	- `0xc000-0xffff`，若有两块的时候，第二块读到这里
+	- `0xc000-0xffff`，只有一块的时候也复制到这里，若有两块的时候，第二块读到这里
 
-若游戏ROM超过2块大小，使用内存映射来决定哪块加载进内存，也就是*bank switch*。
+若游戏ROM超过2块大小，使用mapper内存映射来决定哪块加载进内存，也就是*bank switch*。
 
 ![images/cpu memory map.png](images/cpu memory map.png)
 
