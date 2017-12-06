@@ -77,6 +77,36 @@ TEST(CartridgeTest, test_loading) {
 	Cartridge cart;
 	EXPECT_TRUE(cart.LoadFile("./nestest.nes"));
 	EXPECT_TRUE(cart.PrintHeader());
+}
 
+TEST(CPUTest, test_reading_ram) {
+	CPU cpu;
+	// 测试Ram区
+	for(uint16_t addr = 0; addr < 0x2000; ++addr) {
+		cpu.Write(addr, 0x23);
+		uint16_t testaddr = addr;
+		do {
+			EXPECT_EQ(cpu.Read8(testaddr), 0x23);
+			testaddr = (testaddr + 0x800) % 0x2000;
+		} while(testaddr != addr);
+	}
+	// 测试PPU Register区
+	for(uint16_t addr = 0x2000; addr < 0x4000; ++addr) {
+		cpu.Write(addr, 0x34);
+		uint16_t testaddr = addr;
+		do {
+			EXPECT_EQ(cpu.Read8(testaddr), 0x34);
+			testaddr = (testaddr + 0x8);
+			if(testaddr >= 0x4000) testaddr -= 0x2000;
+		} while(testaddr != addr);
+	}
+	// 测试剩余区域
+	for(uint16_t addr = 0x4000; addr < 0xffff; ++addr) {
+		cpu.Write(addr, 0x15);
+		EXPECT_EQ(cpu.Read8(addr), 0x15);
+	}
+
+	cpu.Write(0xffff, 0x50);
+	EXPECT_EQ(cpu.Read8(0xffff), 0x50);
 
 }
