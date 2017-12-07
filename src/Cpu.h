@@ -49,6 +49,60 @@ private:
 	uint8_t P;
 };
 
+class __CPUMem__ {
+private:
+	uint8_t Ram[0x800]; // 0x0000-0x07ff
+	uint8_t PPURegister[0x8]; // 0x2000-0x2007
+	uint8_t APUIORegister[0x20]; // 0x4000-0x401f
+	uint8_t ExpansionRom[0x1fe0]; // 0x4020-0x5fff
+	uint8_t SRam[0x2000]; // 0x6000-0x7fff
+	uint8_t LowerPRGRom[0x4000]; // 0x8000-0xbfff
+	uint8_t UpperPRGRom[0x4000]; // 0xc000-0xffff
+
+#define AT(addr) (addr < 0x2000 ? Ram[addr & 0x7ff]:        \
+		addr < 0x4000 ? PPURegister[(addr - 0x2000) & 0x7]: \
+		addr < 0x4020 ? APUIORegister[(addr - 0x4000)]:     \
+		addr < 0x6000 ? ExpansionRom[addr - 0x4020]:        \
+		addr < 0x8000 ? SRam[addr - 0x6000]:                \
+		addr < 0xc000 ? LowerPRGRom[addr - 0x8000]:         \
+		UpperPRGRom[addr - 0xc000]);
+
+public:
+	class iterator: public std::iterator // 内部用32位来表示地址，是因为16位不好判断end()
+			<std::random_access_iterator_tag, uint8_t, ptrdiff_t, uint32_t, uint8_t &> {
+	public:
+		iterator(): parent(NULL), addr(0) {}
+		iterator(__CPUMem__ *parent, pointer addr): parent(parent), addr(addr) {}
+
+		reference operator*() { return parent->operator[](addr); }
+
+		iterator& operator++() { ++addr; return *this; } // ++it
+		iterator& operator--() { --addr; return *this; } // --it
+
+		iterator& operator+=(const uint16_t value) { this->addr += value; return *this; }
+		iterator& operator-=(const uint16_t value) { this->addr -= value; return *this; }
+		friend iterator operator+(iterator lhs, const uint16_t& rhs) { lhs += rhs; return lhs; }
+		friend iterator operator-(iterator lhs, const uint16_t& rhs) { lhs -= rhs; return lhs; }
+
+		friend bool operator==(const iterator &lhs, const iterator &rhs) { return lhs.addr == rhs.addr; }
+		friend bool operator!=(const iterator& lhs, const iterator& rhs) { return !(lhs == rhs); }
+		friend bool operator<(const iterator &lhs, const iterator &rhs) { return lhs.addr < rhs.addr; }
+
+		friend difference_type operator-(const iterator &lhs, const iterator &rhs) { return lhs.addr - rhs.addr; }
+
+		uint8_t &operator[](uint16_t value) { return parent->operator[](addr + value); }
+		const uint8_t &operator[](uint16_t value) const { return parent->operator[](addr + value); }
+	private:
+		pointer addr;
+		__CPUMem__ *parent;
+	};
+
+	iterator begin() { return iterator(this, 0); }
+	iterator end() { return iterator(this, 0x10000); }
+
+	uint8_t &operator[](uint16_t addr) { return AT(addr); }
+	const uint8_t &operator[](uint16_t addr) const { return AT(addr); }
+};
 
 class CPU {
 public:
@@ -88,31 +142,7 @@ private:
 	uint8_t SP; // 栈指针，$0100-$01ff
 	uint8_t A, X, Y; // 累加器，X，Y寄存器
 	ProcessorStatus P; // 状态寄存器
-	struct __CPUMem__ {
-		uint8_t Ram[0x800]; // 0x0000-0x07ff
-		uint8_t PPURegister[0x8]; // 0x2000-0x2007
-		uint8_t APUIORegister[0x20]; // 0x4000-0x401f
-		uint8_t ExpansionRom[0x1fe0]; // 0x4020-0x5fff
-		uint8_t SRam[0x2000]; // 0x6000-0x7fff
-		uint8_t LowerPRGRom[0x4000]; // 0x8000-0xbfff
-		uint8_t UpperPRGRom[0x4000]; // 0xc000-0xffff
-
-#define AT(addr) (addr < 0x2000 ? Ram[addr % 0x800]:        \
-		addr < 0x4000 ? PPURegister[(addr - 0x2000) % 0x8]: \
-		addr < 0x4020 ? APUIORegister[(addr - 0x4000)]:     \
-		addr < 0x6000 ? ExpansionRom[addr - 0x4020]:        \
-		addr < 0x8000 ? SRam[addr - 0x6000]:                \
-		addr < 0xc000 ? LowerPRGRom[addr - 0x8000]:         \
-		UpperPRGRom[addr - 0xc000]);
-
-		inline uint8_t &operator[](uint16_t addr) { // 写
-			return AT(addr);
-		}
-
-		inline const uint8_t &operator[](uint16_t addr) const { // 读
-			return AT(addr);
-		}
-	} Mem;
+	__CPUMem__ Mem;
 
 
 };
