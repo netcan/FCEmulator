@@ -9,11 +9,12 @@
 #ifndef FCEMU_CARTRIDGE_H
 #define FCEMU_CARTRIDGE_H
 #include "Base.h"
+#include "Cpu.h"
 
 class Cartridge {
 public:
 	Cartridge();
-	bool LoadFile(const std::string & filename);
+	bool LoadRomFile(CPU &cpu, const std::string & filename);
 	bool PrintHeader() const;
 
 private:

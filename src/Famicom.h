@@ -9,9 +9,15 @@
 #ifndef FCEMU_FAMICOM_H
 #define FCEMU_FAMICOM_H
 #include "Base.h"
+#include "Cpu.h"
+#include "Cartridge.h"
 
 class Famicom {
 public:
+	Famicom(const std::string & RomFileName) {
+		cart.LoadRomFile(cpu, RomFileName);
+		cpu.Reset();
+	}
 
 private:
 	CPU cpu;

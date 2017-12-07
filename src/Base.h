@@ -12,8 +12,6 @@
 #include <string>
 #include <cstdio>
 #include <cassert>
-#include "Cartridge.h"
-#include "Cpu.h"
 
 inline bool GetBit(uint8_t value, size_t pos) { return static_cast<bool>((value >> pos) & 0x01); }
 inline uint8_t GetUpperBits(uint8_t value) { return (value >> 4) & 0x0f; }

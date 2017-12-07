@@ -12,7 +12,7 @@ Cartridge::Cartridge() {
 	static_assert(sizeof(header) == 16, "size of header should be 16 bytes");
 }
 
-bool Cartridge::LoadFile(const std::string &filename) {
+bool Cartridge::LoadRomFile(CPU &cpu, const std::string &filename) {
 	this->filename = filename;
 	FILE *fp = fopen(filename.c_str(), "r");
 	if(fp == NULL) {
@@ -20,7 +20,28 @@ bool Cartridge::LoadFile(const std::string &filename) {
 		perror(filename.c_str());
 		return false;
 	}
-	fread((void*)&header, sizeof(header), 1, fp);
+	fread((void*)&header, sizeof(header), 1, fp); // 读取头
+
+	__CPUMem__::iterator ramIt = cpu.Mem.begin();
+	switch (JointBits(GetUpperBits(header.ROMControl[1]),
+	                  GetLowerBits(header.ROMControl[0]))) {
+		case 0: { // Mapper 0
+			if(GetBit(header.ROMControl[0], 2)) { // Trainer
+				uint8_t trainer[0x200];
+				fread((void*)trainer, sizeof(trainer), 1, fp);
+				std::copy(trainer, trainer + sizeof(trainer), ramIt + 7000);
+			}
+			uint8_t PRGRomData[0x4000];
+			fread((void*)PRGRomData, sizeof(PRGRomData), 1, fp); // Lower PRG ROM Bank
+			std::copy(PRGRomData, PRGRomData + sizeof(PRGRomData), ramIt + 0x8000);
+			if(header.PRGRomBankCnt > 1)
+				fread((void*)PRGRomData, sizeof(PRGRomData), 1, fp); // Upper PRG ROM Bank
+			std::copy(PRGRomData, PRGRomData + sizeof(PRGRomData), ramIt + 0xc000);
+
+			break;
+		}
+	}
+
 	fclose(fp);
 	return true;
 }

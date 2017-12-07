@@ -8,6 +8,9 @@
 
 #include "gtest/gtest.h"
 #include "../Base.h"
+#include "../Cartridge.h"
+#include "../Cpu.h"
+#include "../Famicom.h"
 
 TEST(ProcessorStatusCheck, test_value) {
 // 测试初值
@@ -73,9 +76,16 @@ TEST(BaseTest, test_bit_opt) {
 	EXPECT_EQ(JointBits(0x3, 0xf), 0x3f);
 }
 
-TEST(CartridgeTest, test_loading_file) {
+TEST(CartridgeTest, test_loading_romfile) {
+	CPU cpu;
 	Cartridge cart;
-	EXPECT_TRUE(cart.LoadFile("./nestest.nes"));
+	EXPECT_TRUE(cart.LoadRomFile(cpu, "./nestest.nes"));
+	cpu.Reset();
+	// 测试是否正常读取
+	EXPECT_EQ(cpu.Read8(0xc000), 0x4c);
+	EXPECT_EQ(cpu.Read16(0xc001), 0xc5f5);
+	EXPECT_EQ(cpu.Read8(0xCBAF), 0xa0);
+	EXPECT_EQ(cpu.Read8(0xF87C), 0x60);
 	EXPECT_TRUE(cart.PrintHeader());
 }
 
