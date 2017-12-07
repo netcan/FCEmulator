@@ -140,22 +140,21 @@ private:
 	};
 
 	enum class AdressingMode {
-		implicit,                       // 没有操作数
-		accumulator,                    // A寄存器作为操作数
-		immediate,                      // 8位立即数寻址
-		zeroPage, zeroPageX, zeroPageY, // 零页寻址，+X后寻址，+Y后寻址，范围$0000-$00ff，高字节不进位
-		relative,                       // 相对寻址，用于分支指令，PC += range(-128, 127)
-		absolute, absoluteX, absoluteY, // 16位寻址，+X后寻址，+Y后寻址
-		indirect,                       // 16位地址间接寻址，JMP指令
-		indexIndirect,                  // 零页地址+X后（高字节不进位）间接寻址
-		indirectIndex                   // 零页间接寻址+Y得到新地址
+		Implicit,                       // 没有操作数
+		Accumulator,                    // A寄存器作为操作数
+		Immediate,                      // 8位立即数寻址
+		ZeroPage, ZeroPageX, ZeroPageY, // 零页寻址，+X后寻址，+Y后寻址，范围$0000-$00ff，高字节不进位
+		Relative,                       // 相对寻址，用于分支指令，PC += range(-128, 127)
+		Absolute, AbsoluteX, AbsoluteY, // 16位寻址，+X后寻址，+Y后寻址
+		Indirect,                       // 16位地址间接寻址，JMP指令
+		IndexIndirect,                  // 零页地址+X后（高字节不进位）间接寻址（IDX）
+		IndirectIndex                   // 零页间接寻址，+Y得到新地址（IDY）
 	};
 	enum class InterruptVector: uint16_t {
 		NMI = 0xfffa,
 		Reset = 0xfffc,
 		IRQ = 0xfffe
 	};
-
 
 
 };
