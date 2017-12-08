@@ -120,6 +120,7 @@ public:
 	// 写一个字节
 	inline void Write(uint16_t addr, uint8_t value) { mem[addr] = value; }
 	inline void Reset() { PC = Read16(static_cast<uint16_t>(InterruptVector::Reset)); }
+	uint8_t Execute();
 
 
 private:
@@ -131,14 +132,6 @@ private:
 	uint32_t cycles; // 累计执行周期
 	static const Operation** InitOptable();
 	const static Operation **optable;
-
-
-	enum class OpName { // 56个操作码
-		ADC, AND, ASL, BCC, BCS, BEQ, BIT, BMI, BNE, BPL, BRK, BVC, BVS, CLC,
-		CLD, CLI, CLV, CMP, CPX, CPY, DEC, DEX, DEY, EOR, INC, INX, INY, JMP,
-		JSR, LDA, LDX, LDY, LSR, NOP, ORA, PHA, PHP, PLA, PLP, ROL, ROR, RTI,
-		RTS, SBC, SEC, SED, SEI, STA, STX, STY, TAX, TAY, TSX, TXA, TXS, TYA,
-	};
 
 	enum class OpAddressingMode {
 		Implicit,                       // 没有操作数
@@ -161,10 +154,11 @@ private:
 };
 
 struct Operation { // 指令
-	CPU::OpName name;
+	using ExeFunc = uint8_t (*)(Operation& self, ProcessorStatus &P, uint8_t *operand1, uint8_t *operand2);
+	uint8_t code;
 	CPU::OpAddressingMode addressing_mode;
-	uint8_t code, bytes, cycles, extra_cycles;
-	uint8_t (*exe)(Operation *self, uint8_t *operand1, uint8_t *operand2); // 返回具体执行的cycles数目
+	uint8_t bytes, cycles, extra_cycles;
+	ExeFunc exe; // 返回具体执行的cycles数目
 };
 
 

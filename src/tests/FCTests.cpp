@@ -157,7 +157,12 @@ TEST(CPUTest, test_ram_iterator) {
 
 }
 
+
+
 TEST(CPUTest, opTest) {
 	CPU cpu;
-
+	Cartridge cart;
+	EXPECT_TRUE(cart.LoadRomFile(cpu, "./test.nes"));
+	cpu.Reset();
+	// 测试是否正常读取
 }

@@ -49,10 +49,10 @@ def process_inst_table(opDetailTable):
 def print_inst_table(df):
     prs = '{\n'
     for (_, row) in df.iterrows():
-        prs += '\t{{{}, {}, {}, {}, {}, {}, nullptr}}, \n'.format(
-            row['name'], row['addressingMode'],
-            row['code'], row['bytes'],
-            row['cycles'], row['extraCycles'])
+        prs += '\t{{ {}, {}, {}, {}, {}, nullptr }}, \n'.format(
+            row['code'], row['addressingMode'],
+            row['bytes'], row['cycles'],
+            row['extraCycles'])
     prs = prs[:-3] + '\n};\n'
     print(prs)
     pyperclip.copy(prs)
