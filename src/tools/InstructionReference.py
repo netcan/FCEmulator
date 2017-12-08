@@ -1,6 +1,7 @@
 import requests
 from lxml.html import fromstring
 from collections import namedtuple
+import pyperclip
 import pandas as pd
 
 
@@ -24,7 +25,7 @@ def get_inst_ref():
 
     return opDetailTable
 
-def process_table(opDetailTable):
+def process_inst_table(opDetailTable):
     df = pd.DataFrame(opDetailTable)
     df['addressingMode'] = df['addressingMode'].str.replace('Implied', 'Implicit'
                                         ).str.replace('Zero\s+Page', 'ZeroPage'
@@ -40,9 +41,23 @@ def process_table(opDetailTable):
     df.loc[df['cycles'].str.contains('\+2'), 'extraCycles'] = 2
     df['cycles'] = df['cycles'].str.replace('[\n\s]', ''
                                 ).str.replace('(\d+).*', lambda s: s.group(1))
+    # 加前缀
+    df['name'] = df['name'].str.replace('^\w+$', lambda s: 'OpName::' + s.group(0))
+    df['addressingMode'] = df['addressingMode'].str.replace('^\w+$', lambda s: 'OpAddressingMode::' + s.group(0))
     return df
+
+def print_inst_table(df):
+    prs = '{\n'
+    for (_, row) in df.iterrows():
+        prs += '\t{{{}, {}, {}, {}, {}, {}, nullptr}}, \n'.format(
+            row['name'], row['addressingMode'],
+            row['code'], row['bytes'],
+            row['cycles'], row['extraCycles'])
+    prs = prs[:-3] + '\n};\n'
+    print(prs)
+    pyperclip.copy(prs)
 
 
 if __name__ == '__main__':
-    df = process_table(get_inst_ref())
-    pass
+    df = process_inst_table(get_inst_ref())
+    print_inst_table(df)

@@ -150,4 +150,14 @@ TEST(CPUTest, test_ram_iterator) {
 	for(uint16_t addr = 0x8000; addr < 0xc000; ++addr)
 		EXPECT_EQ(arr[addr - 0x8000], mem[addr]);
 
+	// 指针测试
+	uint8_t *p = (it + 0x0001).get_raw_pointer();
+	*p = 0x34;
+	EXPECT_EQ(it[0x0801], 0x34);
+
+}
+
+TEST(CPUTest, opTest) {
+	CPU cpu;
+
 }

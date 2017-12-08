@@ -75,6 +75,7 @@ public:
 		iterator(__CPUMem__ *parent, pointer addr): parent(parent), addr(addr) {}
 
 		reference operator*() { return parent->operator[](addr); }
+		uint8_t * get_raw_pointer() { return &parent->operator[](addr); }
 
 		iterator& operator++() { ++addr; return *this; } // ++it
 		iterator& operator--() { --addr; return *this; } // --it
@@ -104,42 +105,42 @@ public:
 	const uint8_t &operator[](uint16_t addr) const { return AT(addr); }
 };
 
+struct Operation;
+
 class CPU {
 public:
 	friend class Cartridge;
+	friend struct Operation;
 
-	CPU(): P(0x34), A(0), X(0), Y(0), SP(0xfd) {}; // Power Up
+	CPU() : P(0x34), A(0), X(0), Y(0), SP(0xfd) { }; // Power Up
+	// 读取一个字节
+	inline uint8_t Read8(uint16_t addr) const { return mem[addr]; }
+	// 读取一个字
+	inline uint16_t Read16(uint16_t addr) const { return (mem[addr + 1] << 8) | mem[addr]; }
+	// 写一个字节
+	inline void Write(uint16_t addr, uint8_t value) { mem[addr] = value; }
+	inline void Reset() { PC = Read16(static_cast<uint16_t>(InterruptVector::Reset)); }
 
-	inline uint8_t Read8(uint16_t addr) const { // 读取一个字节
-		return Mem[addr];
-	}
-	inline uint16_t Read16(uint16_t addr) const { // 读取一个字
-		return (Mem[addr + 1] << 8) | Mem[addr];
-	}
-	inline void Write(uint16_t addr, uint8_t value) { // 写一个字节
-		Mem[addr] = value;
-	}
-	inline void Reset() {
-		PC = Read16(static_cast<uint16_t>(InterruptVector::Reset));
-	}
 
 private:
 	uint16_t PC; // 程序计数器
 	uint8_t SP; // 栈指针，$0100-$01ff
 	uint8_t A, X, Y; // 累加器，X，Y寄存器
 	ProcessorStatus P; // 状态寄存器
-	__CPUMem__ Mem;
+	__CPUMem__ mem;
 	uint32_t cycles; // 累计执行周期
+	static const Operation** InitOptable();
+	const static Operation **optable;
 
-	enum class OpcodeType {
-		// 56个操作码
-				ADC, AND, ASL, BCC, BCS, BEQ, BIT, BMI, BNE, BPL, BRK, BVC, BVS, CLC,
+
+	enum class OpName { // 56个操作码
+		ADC, AND, ASL, BCC, BCS, BEQ, BIT, BMI, BNE, BPL, BRK, BVC, BVS, CLC,
 		CLD, CLI, CLV, CMP, CPX, CPY, DEC, DEX, DEY, EOR, INC, INX, INY, JMP,
 		JSR, LDA, LDX, LDY, LSR, NOP, ORA, PHA, PHP, PLA, PLP, ROL, ROR, RTI,
 		RTS, SBC, SEC, SED, SEI, STA, STX, STY, TAX, TAY, TSX, TXA, TXS, TYA,
 	};
 
-	enum class AdressingMode {
+	enum class OpAddressingMode {
 		Implicit,                       // 没有操作数
 		Accumulator,                    // A寄存器作为操作数
 		Immediate,                      // 8位立即数寻址
@@ -158,5 +159,13 @@ private:
 
 
 };
+
+struct Operation { // 指令
+	CPU::OpName name;
+	CPU::OpAddressingMode addressing_mode;
+	uint8_t code, bytes, cycles, extra_cycles;
+	uint8_t (*exe)(Operation *self, uint8_t *operand1, uint8_t *operand2); // 返回具体执行的cycles数目
+};
+
 
 #endif //FCEMU_CPU_H

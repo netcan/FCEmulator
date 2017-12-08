@@ -17,5 +17,6 @@ inline bool GetBit(uint8_t value, size_t pos) { return static_cast<bool>((value 
 inline uint8_t GetUpperBits(uint8_t value) { return (value >> 4) & 0x0f; }
 inline uint8_t GetLowerBits(uint8_t value) { return value & 0x0f; }
 inline uint8_t JointBits(uint8_t upper, uint8_t lower) { return (upper << 4) | (lower & 0x0f); }
+#define LEN(container) (sizeof(container) / sizeof(container[0]))
 
 #endif //FCEMU_BASE_H

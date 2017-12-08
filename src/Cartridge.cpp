@@ -22,7 +22,7 @@ bool Cartridge::LoadRomFile(CPU &cpu, const std::string &filename) {
 	}
 	fread((void*)&header, sizeof(header), 1, fp); // 读取头
 
-	__CPUMem__::iterator ramIt = cpu.Mem.begin();
+	__CPUMem__::iterator ramIt = cpu.mem.begin();
 	switch (JointBits(GetUpperBits(header.ROMControl[1]),
 	                  GetLowerBits(header.ROMControl[0]))) {
 		case 0: { // Mapper 0
