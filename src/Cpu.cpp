@@ -185,20 +185,92 @@ const Operation ** CPU::InitOptable() {
 	return optable;
 }
 
+void CPU::FetchOperands(CPU::OpAddressingMode addressing_mode, uint8_t *& oprand, bool& crossed_page) {
+	static uint8_t tempOprand = 0;
+	uint16_t addr, pointer;
+	switch (addressing_mode) {
+		case OpAddressingMode::Implicit:
+		case OpAddressingMode::Accumulator:
+			oprand = nullptr;
+			break;
+
+		case OpAddressingMode::Absolute:
+			addr = Read16(PC + 1);
+			oprand = &mem[addr];
+			break;
+
+		case OpAddressingMode::AbsoluteX:
+			addr = Read16(PC + 1);
+			if((addr + X) & 0xff00 != addr & 0xff00) crossed_page = true;
+			addr += X;
+			oprand = &mem[addr];
+			break;
+		case OpAddressingMode::AbsoluteY:
+			addr = Read16(PC + 1);
+			if((addr + Y) & 0xff00 != addr & 0xff00) crossed_page = true;
+			addr += Y;
+			oprand = &mem[addr];
+			break;
+
+		case OpAddressingMode::Relative: // 分支指令专用
+			tempOprand = Read8(PC + 1);
+			oprand = &tempOprand;
+			break;
+		case OpAddressingMode::IndexIndirect: // IDX
+			pointer = Read8(PC + 1);
+			addr = Read8((pointer + X) & 0xff) | Read8((pointer + X + 1) &0xff) << 0x08;
+			oprand = &mem[addr];
+			break;
+
+		case OpAddressingMode::IndirectIndex: // IDY
+			pointer = Read8(PC + 1);
+			addr = Read8(pointer) | Read8((pointer + 1) & 0xff) << 0x08;
+			if((addr + Y) & 0xff00 != addr & 0xff00) crossed_page = true;
+			addr += Y;
+			oprand = &mem[addr];
+			break;
+
+		case OpAddressingMode::ZeroPage:
+			addr = Read8(PC + 1);
+			oprand = &mem[addr];
+			break;
+
+		case OpAddressingMode::ZeroPageX:
+			addr = (Read8(PC + 1) + X) & 0xff;
+			oprand = &mem[addr];
+			break;
+
+		case OpAddressingMode::ZeroPageY:
+			addr = (Read8(PC + 1) + Y) & 0xff;
+			oprand = &mem[addr];
+			break;
+
+		case OpAddressingMode::Indirect: // JMP专用
+		default:
+			oprand = nullptr;
+			break;
+	}
+}
+
 uint8_t CPU::Execute() {
 	// 执行一条指令，返回执行周期数
 	// 取指->译码->执行->更新PC->...
 
 	// 取指
 	uint8_t op_code = Read8(PC);
-	PC += optable[op_code]->bytes;
+	uint16_t updated_pc = PC + optable[op_code]->bytes;
 
 	// 译码
-	uint8_t *oprand1, *oprand2;
+	uint8_t *oprand;
+	bool crossed_page = false;
+	FetchOperands(optable[op_code]->addressing_mode, oprand, crossed_page);
+	PC = updated_pc;
 
 	// 执行
-	return ExeFunc(optable[op_code], P, oprand1, oprand2);
+	uint8_t cycle = ExeFunc(optable[op_code], this, oprand, updated_pc);
+	cycles += cycle;
 
+	return cycle;
 }
 
 
@@ -217,7 +289,7 @@ OpExeFuncDefine(OP_CLC) {
 
 OpExeFuncDefine(OP_CLD) {
 	// Sets the decimal mode flag to zero.
-	P.Decimal = false;
+	cpu->P.Decimal = false;
 	return self.cycles;
 }
 
@@ -289,7 +361,7 @@ OpExeFuncDefine(OP_SEC) {
 
 OpExeFuncDefine(OP_SED) {
 	// Set the decimal mode flag to one.
-	P.Decimal = true;
+	cpu->P.Decimal = true;
 	return self.cycles;
 }
 
@@ -538,6 +610,7 @@ OpExeFuncDefine(OP_JSR) {
 
 	return self.cycles;
 }
+
 
 /****************  指令实现区End  ****************/
 

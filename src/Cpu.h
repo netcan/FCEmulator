@@ -9,9 +9,10 @@
 #ifndef FCEMU_CPU_H
 #define FCEMU_CPU_H
 #include "Base.h"
-#define OpExeFuncDecl(func_name) static uint8_t func_name(const Operation& self, ProcessorStatus &P, uint8_t *operand1, uint8_t *operand2)
-#define OpExeFuncDefine(func_name) uint8_t CPU::func_name(const Operation& self, ProcessorStatus &P, uint8_t *operand1, uint8_t *operand2)
-#define ExeFunc(op_code_entity, P, oprand1, oprand2) op_code_entity->exe(*op_code_entity, P, oprand1, oprand2)
+#define OpExeFuncArgs const Operation& self, CPU *cpu, uint8_t *operand, uint16_t& updated_pc
+#define OpExeFuncDecl(func_name) static uint8_t func_name(OpExeFuncArgs)
+#define OpExeFuncDefine(func_name) uint8_t CPU::func_name(OpExeFuncArgs)
+#define ExeFunc(op_code_entity, cpu, oprand, updated_pc) op_code_entity->exe(*op_code_entity, cpu, oprand, updated_pc)
 
 class ProcessorStatus;
 
@@ -137,6 +138,26 @@ private:
 	static const Operation** InitOptable();
 	static const Operation **optable;
 
+	enum class OpAddressingMode {
+		Implicit,                       // 没有操作数
+		Accumulator,                    // A寄存器作为操作数
+		Immediate,                      // 8位立即数寻址
+		ZeroPage, ZeroPageX, ZeroPageY, // 零页寻址，+X后寻址，+Y后寻址，范围$0000-$00ff，高字节不进位
+		Relative,                       // 相对寻址，用于分支指令，PC += range(-128, 127)
+		Absolute, AbsoluteX, AbsoluteY, // 16位寻址，+X后寻址，+Y后寻址
+		Indirect,                       // 16位地址间接寻址，JMP指令
+		IndexIndirect,                  // 零页地址+X后（高字节不进位）间接寻址（IDX）
+		IndirectIndex                   // 零页间接寻址，+Y得到新地址（IDY）
+	};
+
+	enum class InterruptVector: uint16_t {
+		NMI = 0xfffa,
+		Reset = 0xfffc,
+		IRQ = 0xfffe
+	};
+
+	void FetchOperands(OpAddressingMode addressing_mode, uint8_t *& oprand, bool &crossed_page);
+
 	/**************** 指令声明区Begin ****************/
 	OpExeFuncDecl(OP_ASL);
 	OpExeFuncDecl(OP_CLC);
@@ -196,30 +217,10 @@ private:
 	OpExeFuncDecl(OP_JSR);
 /****************  指令声明区End  ****************/
 
-
-
-
-
-	enum class OpAddressingMode {
-		Implicit,                       // 没有操作数
-		Accumulator,                    // A寄存器作为操作数
-		Immediate,                      // 8位立即数寻址
-		ZeroPage, ZeroPageX, ZeroPageY, // 零页寻址，+X后寻址，+Y后寻址，范围$0000-$00ff，高字节不进位
-		Relative,                       // 相对寻址，用于分支指令，PC += range(-128, 127)
-		Absolute, AbsoluteX, AbsoluteY, // 16位寻址，+X后寻址，+Y后寻址
-		Indirect,                       // 16位地址间接寻址，JMP指令
-		IndexIndirect,                  // 零页地址+X后（高字节不进位）间接寻址（IDX）
-		IndirectIndex                   // 零页间接寻址，+Y得到新地址（IDY）
-	};
-	enum class InterruptVector: uint16_t {
-		NMI = 0xfffa,
-		Reset = 0xfffc,
-		IRQ = 0xfffe
-	};
 };
 
 struct Operation { // 指令
-	using ExeFunc = uint8_t (*)(const Operation& self, ProcessorStatus &P, uint8_t *operand1, uint8_t *operand2);
+	using ExeFunc = uint8_t (*)(OpExeFuncArgs);
 	uint8_t code;
 	CPU::OpAddressingMode addressing_mode;
 	uint8_t bytes, cycles, extra_cycles;
