@@ -9,6 +9,9 @@
 #ifndef FCEMU_CPU_H
 #define FCEMU_CPU_H
 #include "Base.h"
+#define OpExeFuncDecl(func_name) static uint8_t func_name(const Operation& self, ProcessorStatus &P, uint8_t *operand1, uint8_t *operand2)
+#define OpExeFuncDefine(func_name) uint8_t CPU::func_name(const Operation& self, ProcessorStatus &P, uint8_t *operand1, uint8_t *operand2)
+#define ExeFunc(op_code_entity, P, oprand1, oprand2) op_code_entity->exe(*op_code_entity, P, oprand1, oprand2)
 
 class ProcessorStatus;
 
@@ -121,8 +124,9 @@ public:
 	inline void Write(uint16_t addr, uint8_t value) { mem[addr] = value; }
 	inline void Reset() { PC = Read16(static_cast<uint16_t>(InterruptVector::Reset)); }
 	uint8_t Execute();
-
-
+#ifndef NDEBUG
+	ProcessorStatus &getP() { return P; }
+#endif
 private:
 	uint16_t PC; // 程序计数器
 	uint8_t SP; // 栈指针，$0100-$01ff
@@ -131,7 +135,70 @@ private:
 	__CPUMem__ mem;
 	uint32_t cycles; // 累计执行周期
 	static const Operation** InitOptable();
-	const static Operation **optable;
+	static const Operation **optable;
+
+	/**************** 指令声明区Begin ****************/
+	OpExeFuncDecl(OP_ASL);
+	OpExeFuncDecl(OP_CLC);
+	OpExeFuncDecl(OP_CLD);
+	OpExeFuncDecl(OP_CLI);
+	OpExeFuncDecl(OP_CLV);
+	OpExeFuncDecl(OP_DEX);
+	OpExeFuncDecl(OP_DEY);
+	OpExeFuncDecl(OP_INX);
+	OpExeFuncDecl(OP_INY);
+	OpExeFuncDecl(OP_LSR);
+	OpExeFuncDecl(OP_NOP);
+	OpExeFuncDecl(OP_ROL);
+	OpExeFuncDecl(OP_ROR);
+	OpExeFuncDecl(OP_SEC);
+	OpExeFuncDecl(OP_SED);
+	OpExeFuncDecl(OP_SEI);
+	OpExeFuncDecl(OP_TAX);
+	OpExeFuncDecl(OP_TAY);
+	OpExeFuncDecl(OP_TSX);
+	OpExeFuncDecl(OP_TXA);
+	OpExeFuncDecl(OP_TXS);
+	OpExeFuncDecl(OP_TYA);
+	OpExeFuncDecl(OP_PHA);
+	OpExeFuncDecl(OP_PHP);
+	OpExeFuncDecl(OP_PLA);
+	OpExeFuncDecl(OP_PLP);
+	OpExeFuncDecl(OP_RTI);
+	OpExeFuncDecl(OP_RTS);
+	OpExeFuncDecl(OP_BRK);
+	OpExeFuncDecl(OP_BCC);
+	OpExeFuncDecl(OP_BCS);
+	OpExeFuncDecl(OP_BEQ);
+	OpExeFuncDecl(OP_BMI);
+	OpExeFuncDecl(OP_BNE);
+	OpExeFuncDecl(OP_BPL);
+	OpExeFuncDecl(OP_BVC);
+	OpExeFuncDecl(OP_BVS);
+	OpExeFuncDecl(OP_ADC);
+	OpExeFuncDecl(OP_AND);
+	OpExeFuncDecl(OP_CMP);
+	OpExeFuncDecl(OP_CPX);
+	OpExeFuncDecl(OP_CPY);
+	OpExeFuncDecl(OP_EOR);
+	OpExeFuncDecl(OP_LDA);
+	OpExeFuncDecl(OP_LDX);
+	OpExeFuncDecl(OP_LDY);
+	OpExeFuncDecl(OP_ORA);
+	OpExeFuncDecl(OP_SBC);
+	OpExeFuncDecl(OP_BIT);
+	OpExeFuncDecl(OP_STA);
+	OpExeFuncDecl(OP_STX);
+	OpExeFuncDecl(OP_STY);
+	OpExeFuncDecl(OP_DEC);
+	OpExeFuncDecl(OP_INC);
+	OpExeFuncDecl(OP_JMP);
+	OpExeFuncDecl(OP_JSR);
+/****************  指令声明区End  ****************/
+
+
+
+
 
 	enum class OpAddressingMode {
 		Implicit,                       // 没有操作数
@@ -149,12 +216,10 @@ private:
 		Reset = 0xfffc,
 		IRQ = 0xfffe
 	};
-
-
 };
 
 struct Operation { // 指令
-	using ExeFunc = uint8_t (*)(Operation& self, ProcessorStatus &P, uint8_t *operand1, uint8_t *operand2);
+	using ExeFunc = uint8_t (*)(const Operation& self, ProcessorStatus &P, uint8_t *operand1, uint8_t *operand2);
 	uint8_t code;
 	CPU::OpAddressingMode addressing_mode;
 	uint8_t bytes, cycles, extra_cycles;

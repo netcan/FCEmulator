@@ -2,7 +2,7 @@ project(FCTests)
 
 add_custom_target(
         test.nes
-        COMMAND ca65 ${CMAKE_CURRENT_SOURCE_DIR}/test.a -o test.o
+        COMMAND ca65 ${CMAKE_CURRENT_SOURCE_DIR}/test.asm -o test.o
         COMMAND ld65 -t nes -o test.nes test.o
 )
 configure_file(nestest.nes nestest.nes COPYONLY)

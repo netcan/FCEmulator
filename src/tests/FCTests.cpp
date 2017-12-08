@@ -163,6 +163,15 @@ TEST(CPUTest, opTest) {
 	CPU cpu;
 	Cartridge cart;
 	EXPECT_TRUE(cart.LoadRomFile(cpu, "./test.nes"));
+	EXPECT_TRUE(cart.PrintHeader());
 	cpu.Reset();
-	// 测试是否正常读取
+	// 测试是否正常读取指令
+	EXPECT_EQ(cpu.Read8(0x8000), 0xf8); // SED
+
+	// 开始执行
+	EXPECT_EQ(cpu.Execute(), 2);
+	EXPECT_TRUE(cpu.getP().Decimal);
+	EXPECT_EQ(cpu.Execute(), 2);
+	EXPECT_FALSE(cpu.getP().Decimal);
+
 }

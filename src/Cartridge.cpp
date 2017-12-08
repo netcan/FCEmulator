@@ -49,6 +49,7 @@ bool Cartridge::LoadRomFile(CPU &cpu, const std::string &filename) {
 bool Cartridge::PrintHeader() const {
 	if(header.INes[0] == 0x4e && header.INes[1] == 0x45
 	&& header.INes[2] == 0x53 && header.INes[3] == 0x1a) {
+		puts("\n---------------------------------------");
 		printf("File name: %s\n"
 				       "PRG-ROM size: %dx16k\n"
 				       "CHR-ROM size: %dx8k\n"

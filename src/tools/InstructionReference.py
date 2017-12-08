@@ -25,7 +25,7 @@ def get_inst_ref():
 
     return opDetailTable
 
-def process_inst_table(opDetailTable):
+def clean_inst_table(opDetailTable):
     df = pd.DataFrame(opDetailTable)
     df['addressingMode'] = df['addressingMode'].str.replace('Implied', 'Implicit'
                                         ).str.replace('Zero\s+Page', 'ZeroPage'
@@ -42,22 +42,50 @@ def process_inst_table(opDetailTable):
     df['cycles'] = df['cycles'].str.replace('[\n\s]', ''
                                 ).str.replace('(\d+).*', lambda s: s.group(1))
     # 加前缀
-    df['name'] = df['name'].str.replace('^\w+$', lambda s: 'OpName::' + s.group(0))
-    df['addressingMode'] = df['addressingMode'].str.replace('^\w+$', lambda s: 'OpAddressingMode::' + s.group(0))
+    # df['name'] = df['name'].str.replace('^\w+$', lambda s: 'OpName::' + s.group(0))
+    # df['addressingMode'] = df['addressingMode'].str.replace('^\w+$', lambda s: 'OpAddressingMode::' + s.group(0))
     return df
 
 def print_inst_table(df):
     prs = '{\n'
     for (_, row) in df.iterrows():
-        prs += '\t{{ {}, {}, {}, {}, {}, nullptr }}, \n'.format(
+        prs += '\t{{ {0}, OpAddressingMode::{1:>13}, {2}, {3}, {4}, CPU::OP_{5} }}, \n'.format(
             row['code'], row['addressingMode'],
             row['bytes'], row['cycles'],
-            row['extraCycles'])
+            row['extraCycles'], row['name'])
     prs = prs[:-3] + '\n};\n'
     print(prs)
     pyperclip.copy(prs)
 
 
+def print_op_exec_func_decl(df):
+    # 按指令实现难易程度排序
+    df_sorted = df.sort_values(by=['bytes', 'cycles', 'extraCycles']).drop_duplicates(subset='name')
+    prs = '/**************** 指令声明区Begin ****************/\n'
+    for (_, row) in df_sorted.iterrows():
+        prs += 'OpExeFuncDecl(OP_{});\n'.format(row['name'])
+    prs += '/****************  指令声明区End  ****************/\n'
+    print(prs)
+    print(len(df_sorted))
+    pyperclip.copy(prs)
+
+def print_op_exec_func_define(df):
+    # 按指令实现难易程度排序
+    df_sorted = df.sort_values(by=['bytes', 'cycles', 'extraCycles']).drop_duplicates(subset='name')
+    prs = '/**************** 指令实现区Begin ****************/\n'
+    for (_, row) in df_sorted.iterrows():
+        prs += 'OpExeFuncDefine(OP_{}) {{\n'.format(row['name']) + \
+               '\t// TODO: wait for implements: {}\n\n'.format(row['name']) +\
+                '\treturn self.cycles;\n' + \
+               '}\n\n'
+    prs += '/****************  指令实现区End  ****************/\n'
+    print(prs)
+    print(len(df_sorted))
+    pyperclip.copy(prs)
+
+
 if __name__ == '__main__':
-    df = process_inst_table(get_inst_ref())
+    df = clean_inst_table(get_inst_ref())
     print_inst_table(df)
+    # print_op_exec_func_decl(df)
+    # print_op_exec_func_define(df)
