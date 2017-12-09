@@ -11,16 +11,26 @@ def get_inst_ref():
     # 获取指令名，指令表
     opName = [name.attrib['name'] for name in ref.cssselect('h3 a')]
     opTable = ref.cssselect('table')[2::2]
-    opDetail = namedtuple('opDetail', ['name', 'addressingMode', 'code', 'bytes', 'cycles', 'extraCycles'])
+    opDescription = ref.cssselect('h3')
+    opDetail = namedtuple('opDetail', ['name', 'addressingMode', 'code', 'bytes', 'cycles', 'extraCycles', 'description'])
     opDetailTable = []
-    for (name, table) in zip(opName, opTable):
+    for (name, table, description) in zip(opName, opTable, opDescription):
+        des = []
+        while True:
+            content = description.text_content().strip()
+            if content == '' or 'Processor Status after use:' in content:
+                break
+            des.append(content)
+            description = description.getnext()
+
         for detail in table.cssselect('tr')[1:]:
             td = detail.cssselect('td')
             d = opDetail(name, td[0].text_content().strip(),
                          td[1].text_content().strip(),
                          td[2].text_content().strip(),
                          td[3].text_content().strip(),
-                         '0')
+                         '0', des)
+
             opDetailTable.append(d)
 
     return opDetailTable
@@ -63,7 +73,7 @@ def print_op_exec_func_decl(df):
     df_sorted = df.sort_values(by=['bytes', 'cycles', 'extraCycles']).drop_duplicates(subset='name')
     prs = '/**************** 指令声明区Begin ****************/\n'
     for (_, row) in df_sorted.iterrows():
-        prs += 'OpExeFuncDecl(OP_{});\n'.format(row['name'])
+        prs += 'OpExeFuncDecl(OP_{}); // {}\n'.format(row['name'], row['description'][0])
     prs += '/****************  指令声明区End  ****************/\n'
     print(prs)
     print(len(df_sorted))
@@ -72,12 +82,26 @@ def print_op_exec_func_decl(df):
 def print_op_exec_func_define(df):
     # 按指令实现难易程度排序
     df_sorted = df.sort_values(by=['bytes', 'cycles', 'extraCycles']).drop_duplicates(subset='name')
-    prs = '/**************** 指令实现区Begin ****************/\n'
+    prs = '参考手册： http://obelisk.me.uk/6502/reference.html\n' \
+          '/**************** 指令实现区Begin ****************/\n'
     for (_, row) in df_sorted.iterrows():
-        prs += 'OpExeFuncDefine(OP_{}) {{\n'.format(row['name']) + \
-               '\t// TODO: wait for implements: {}\n\n'.format(row['name']) +\
-                '\treturn self.cycles;\n' + \
-               '}\n\n'
+        d = row['description'].copy()
+        d[1:] = [d.replace('\r\n', '\n\t * ') for d in d[1:]]
+        if len(d) < 3:
+            d.append('')
+        else:
+            d[2] = '\t * {}\n'.format(d[2])
+
+        prs += 'OpExeFuncDefine(OP_{}) {{\n' \
+               '\t// TODO: wait for implements: {}\n' \
+               '\t/**\n' \
+               '\t * {}\n' \
+               '\t * {}\n' \
+               '{}' \
+               '\t **/\n' \
+               '\n\treturn self.cycles;\n' \
+               '}}\n\n'.format(row['name'], row['name'], *d)
+
     prs += '/****************  指令实现区End  ****************/\n'
     print(prs)
     print(len(df_sorted))
@@ -86,6 +110,6 @@ def print_op_exec_func_define(df):
 
 if __name__ == '__main__':
     df = clean_inst_table(get_inst_ref())
-    print_inst_table(df)
+    # print_inst_table(df)
     # print_op_exec_func_decl(df)
-    # print_op_exec_func_define(df)
+    print_op_exec_func_define(df)

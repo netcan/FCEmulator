@@ -158,64 +158,65 @@ private:
 
 	void FetchOperands(OpAddressingMode addressing_mode, uint8_t *& oprand, bool &crossed_page);
 
-	/**************** 指令声明区Begin ****************/
-	OpExeFuncDecl(OP_ASL);
-	OpExeFuncDecl(OP_CLC);
-	OpExeFuncDecl(OP_CLD);
-	OpExeFuncDecl(OP_CLI);
-	OpExeFuncDecl(OP_CLV);
-	OpExeFuncDecl(OP_DEX);
-	OpExeFuncDecl(OP_DEY);
-	OpExeFuncDecl(OP_INX);
-	OpExeFuncDecl(OP_INY);
-	OpExeFuncDecl(OP_LSR);
-	OpExeFuncDecl(OP_NOP);
-	OpExeFuncDecl(OP_ROL);
-	OpExeFuncDecl(OP_ROR);
-	OpExeFuncDecl(OP_SEC);
-	OpExeFuncDecl(OP_SED);
-	OpExeFuncDecl(OP_SEI);
-	OpExeFuncDecl(OP_TAX);
-	OpExeFuncDecl(OP_TAY);
-	OpExeFuncDecl(OP_TSX);
-	OpExeFuncDecl(OP_TXA);
-	OpExeFuncDecl(OP_TXS);
-	OpExeFuncDecl(OP_TYA);
-	OpExeFuncDecl(OP_PHA);
-	OpExeFuncDecl(OP_PHP);
-	OpExeFuncDecl(OP_PLA);
-	OpExeFuncDecl(OP_PLP);
-	OpExeFuncDecl(OP_RTI);
-	OpExeFuncDecl(OP_RTS);
-	OpExeFuncDecl(OP_BRK);
-	OpExeFuncDecl(OP_BCC);
-	OpExeFuncDecl(OP_BCS);
-	OpExeFuncDecl(OP_BEQ);
-	OpExeFuncDecl(OP_BMI);
-	OpExeFuncDecl(OP_BNE);
-	OpExeFuncDecl(OP_BPL);
-	OpExeFuncDecl(OP_BVC);
-	OpExeFuncDecl(OP_BVS);
-	OpExeFuncDecl(OP_ADC);
-	OpExeFuncDecl(OP_AND);
-	OpExeFuncDecl(OP_CMP);
-	OpExeFuncDecl(OP_CPX);
-	OpExeFuncDecl(OP_CPY);
-	OpExeFuncDecl(OP_EOR);
-	OpExeFuncDecl(OP_LDA);
-	OpExeFuncDecl(OP_LDX);
-	OpExeFuncDecl(OP_LDY);
-	OpExeFuncDecl(OP_ORA);
-	OpExeFuncDecl(OP_SBC);
-	OpExeFuncDecl(OP_BIT);
-	OpExeFuncDecl(OP_STA);
-	OpExeFuncDecl(OP_STX);
-	OpExeFuncDecl(OP_STY);
-	OpExeFuncDecl(OP_DEC);
-	OpExeFuncDecl(OP_INC);
-	OpExeFuncDecl(OP_JMP);
-	OpExeFuncDecl(OP_JSR);
+/**************** 指令声明区Begin ****************/
+	OpExeFuncDecl(OP_ASL); // ASL - Arithmetic Shift Left
+	OpExeFuncDecl(OP_CLC); // CLC - Clear Carry Flag
+	OpExeFuncDecl(OP_CLD); // CLD - Clear Decimal Mode
+	OpExeFuncDecl(OP_CLI); // CLI - Clear Interrupt Disable
+	OpExeFuncDecl(OP_CLV); // CLV - Clear Overflow Flag
+	OpExeFuncDecl(OP_DEX); // DEX - Decrement X Register
+	OpExeFuncDecl(OP_DEY); // DEY - Decrement Y Register
+	OpExeFuncDecl(OP_INX); // INX - Increment X Register
+	OpExeFuncDecl(OP_INY); // INY - Increment Y Register
+	OpExeFuncDecl(OP_LSR); // LSR - Logical Shift Right
+	OpExeFuncDecl(OP_NOP); // NOP - No Operation
+	OpExeFuncDecl(OP_ROL); // ROL - Rotate Left
+	OpExeFuncDecl(OP_ROR); // ROR - Rotate Right
+	OpExeFuncDecl(OP_SEC); // SEC - Set Carry Flag
+	OpExeFuncDecl(OP_SED); // SED - Set Decimal Flag
+	OpExeFuncDecl(OP_SEI); // SEI - Set Interrupt Disable
+	OpExeFuncDecl(OP_TAX); // TAX - Transfer Accumulator to X
+	OpExeFuncDecl(OP_TAY); // TAY - Transfer Accumulator to Y
+	OpExeFuncDecl(OP_TSX); // TSX - Transfer Stack Pointer to X
+	OpExeFuncDecl(OP_TXA); // TXA - Transfer X to Accumulator
+	OpExeFuncDecl(OP_TXS); // TXS - Transfer X to Stack Pointer
+	OpExeFuncDecl(OP_TYA); // TYA - Transfer Y to Accumulator
+	OpExeFuncDecl(OP_PHA); // PHA - Push Accumulator
+	OpExeFuncDecl(OP_PHP); // PHP - Push Processor Status
+	OpExeFuncDecl(OP_PLA); // PLA - Pull Accumulator
+	OpExeFuncDecl(OP_PLP); // PLP - Pull Processor Status
+	OpExeFuncDecl(OP_RTI); // RTI - Return from Interrupt
+	OpExeFuncDecl(OP_RTS); // RTS - Return from Subroutine
+	OpExeFuncDecl(OP_BRK); // BRK - Force Interrupt
+	OpExeFuncDecl(OP_BCC); // BCC - Branch if Carry Clear
+	OpExeFuncDecl(OP_BCS); // BCS - Branch if Carry Set
+	OpExeFuncDecl(OP_BEQ); // BEQ - Branch if Equal
+	OpExeFuncDecl(OP_BMI); // BMI - Branch if Minus
+	OpExeFuncDecl(OP_BNE); // BNE - Branch if Not Equal
+	OpExeFuncDecl(OP_BPL); // BPL - Branch if Positive
+	OpExeFuncDecl(OP_BVC); // BVC - Branch if Overflow Clear
+	OpExeFuncDecl(OP_BVS); // BVS - Branch if Overflow Set
+	OpExeFuncDecl(OP_ADC); // ADC - Add with Carry
+	OpExeFuncDecl(OP_AND); // AND - Logical AND
+	OpExeFuncDecl(OP_CMP); // CMP - Compare
+	OpExeFuncDecl(OP_CPX); // CPX - Compare X Register
+	OpExeFuncDecl(OP_CPY); // CPY - Compare Y Register
+	OpExeFuncDecl(OP_EOR); // EOR - Exclusive OR
+	OpExeFuncDecl(OP_LDA); // LDA - Load Accumulator
+	OpExeFuncDecl(OP_LDX); // LDX - Load X Register
+	OpExeFuncDecl(OP_LDY); // LDY - Load Y Register
+	OpExeFuncDecl(OP_ORA); // ORA - Logical Inclusive OR
+	OpExeFuncDecl(OP_SBC); // SBC - Subtract with Carry
+	OpExeFuncDecl(OP_BIT); // BIT - Bit Test
+	OpExeFuncDecl(OP_STA); // STA - Store Accumulator
+	OpExeFuncDecl(OP_STX); // STX - Store X Register
+	OpExeFuncDecl(OP_STY); // STY - Store Y Register
+	OpExeFuncDecl(OP_DEC); // DEC - Decrement Memory
+	OpExeFuncDecl(OP_INC); // INC - Increment Memory
+	OpExeFuncDecl(OP_JMP); // JMP - Jump
+	OpExeFuncDecl(OP_JSR); // JSR - Jump to Subroutine
 /****************  指令声明区End  ****************/
+
 
 };
 
