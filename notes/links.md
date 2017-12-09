@@ -12,4 +12,7 @@
 - Nes文件格式：[https://wiki.nesdev.com/w/index.php/INES](https://wiki.nesdev.com/w/index.php/INES)
 - 迭代器：[http://www.cplusplus.com/reference/iterator/iterator/](http://www.cplusplus.com/reference/iterator/iterator/)
 - 编译器：[http://cc65.github.io/doc/nes.html](http://cc65.github.io/doc/nes.html)
-- 6502汇编：[http://nesdev.com/6502guid.txt](http://nesdev.com/6502guid.txt)
+- 6502汇编：
+	- [http://nesdev.com/6502guid.txt](http://nesdev.com/6502guid.txt)
+	- [https://en.wikibooks.org/wiki/6502_Assembly](https://en.wikibooks.org/wiki/6502_Assembly)
+

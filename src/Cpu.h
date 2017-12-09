@@ -13,6 +13,7 @@
 #define OpExeFuncDecl(func_name) static uint8_t func_name(OpExeFuncArgs)
 #define OpExeFuncDefine(func_name) uint8_t CPU::func_name(OpExeFuncArgs)
 #define ExeFunc(op_code_entity, cpu, oprand, updated_pc, crossed_page) op_code_entity->exe(*op_code_entity, cpu, oprand, updated_pc, crossed_page)
+inline bool Sign(uint8_t x) { return GetBit(x, 7); };
 
 class ProcessorStatus;
 
@@ -123,6 +124,11 @@ public:
 	inline uint16_t Read16(uint16_t addr) const { return (mem[addr + 1] << 8) | mem[addr]; }
 	// 写一个字节
 	inline void Write(uint16_t addr, uint8_t value) { mem[addr] = value; }
+	// 入栈
+	inline void Push(uint8_t value) { mem[0x100 | (SP--)] = value; }
+	// 出栈
+	inline uint8_t Pop() { return mem[0x100 | (++SP)]; }
+
 	inline void Reset() { PC = Read16(static_cast<uint16_t>(InterruptVector::Reset)); }
 	uint8_t Execute();
 #ifndef NDEBUG

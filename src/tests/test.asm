@@ -8,13 +8,63 @@
 .segment "CODE"
 
 irq:
+    rti
 nmi:
 reset:
 	sed
 	cld
+
 	asl ; A << 1
 	asl $66 ; ZeroPage addressing
 	asl $ff,X ; ZeroPageX addressing
 	asl $6666 ; Absolute addressing
 	asl $6666,X ; Absolute,X addressing
 
+	clc
+	cli
+	clv
+
+	dex
+	dex
+
+	inx
+	inx
+
+	dey
+	dey
+
+	iny
+	iny
+
+	lsr
+	lsr $6666
+
+	nop
+
+	rol
+	rol $66
+	rol $66
+
+    ror
+    ror $60,X
+
+    sec
+    sei
+
+    tax
+    tay
+    tsx
+    txa
+    txs
+    tya
+
+    pha
+    php
+
+    pla
+    plp
+
+    brk
+
+bcctest:    nop
+            bcc bcctest

@@ -278,6 +278,7 @@ uint8_t CPU::Execute() {
 
 // 参考手册： http://obelisk.me.uk/6502/reference.html
 /**************** 指令实现区Begin ****************/
+#define MorA (operand ? *operand:cpu->A)
 OpExeFuncDefine(OP_ASL) {
 	/**
 	 * ASL - Arithmetic Shift Left
@@ -288,23 +289,23 @@ OpExeFuncDefine(OP_ASL) {
 	 * memory contents by 2 (ignoring 2's complement considerations),
 	 * setting the carry if the result will not fit in 8 bits.
 	 **/
-	uint16_t result = (operand ? *operand : cpu->A) << 1;
-	(operand ? *operand : cpu->A) <<= 1;
+	uint16_t result = MorA << 1;
+	MorA <<= 1;
 
 	cpu->P.Zero = ((result & 0xff) == 0);
 	cpu->P.Carry = GetBit(result, 0x8);
-	cpu->P.Negative = GetBit(result, 0x7);
+	cpu->P.Negative = Sign(result);
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_CLC) {
-	// TODO: wait for implements: CLC
 	/**
 	 * CLC - Clear Carry Flag
 	 * C = 0
 	 * Set the carry flag to zero.
 	 **/
+	cpu->P.Carry = false;
 
 	return self.cycles;
 }
@@ -321,7 +322,6 @@ OpExeFuncDefine(OP_CLD) {
 }
 
 OpExeFuncDefine(OP_CLI) {
-	// TODO: wait for implements: CLI
 	/**
 	 * CLI - Clear Interrupt Disable
 	 * I = 0
@@ -329,70 +329,82 @@ OpExeFuncDefine(OP_CLI) {
 	 * requests to be serviced.
 	 **/
 
+	cpu->P.IrqDisabled = false;
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_CLV) {
-	// TODO: wait for implements: CLV
 	/**
 	 * CLV - Clear Overflow Flag
 	 * V = 0
 	 * Clears the overflow flag.
 	 **/
 
+	cpu->P.Overflow = false;
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_DEX) {
-	// TODO: wait for implements: DEX
 	/**
 	 * DEX - Decrement X Register
 	 * X,Z,N = X-1
 	 * Subtracts one from the X register setting the zero and negative
 	 * flags as appropriate.
 	 **/
+	auto result = uint8_t(cpu->X - 1);
+	cpu->P.Negative = Sign(result);
+	cpu->P.Zero = result == 0;
+	cpu->X = result;
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_DEY) {
-	// TODO: wait for implements: DEY
 	/**
 	 * DEY - Decrement Y Register
 	 * Y,Z,N = Y-1
 	 * Subtracts one from the Y register setting the zero and negative
 	 * flags as appropriate.
 	 **/
+	auto result = uint8_t(cpu->Y - 1);
+	cpu->P.Negative = Sign(result);
+	cpu->P.Zero = result == 0;
+	cpu->Y = result;
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_INX) {
-	// TODO: wait for implements: INX
 	/**
 	 * INX - Increment X Register
 	 * X,Z,N = X+1
 	 * Adds one to the X register setting the zero and negative flags
 	 * as appropriate.
 	 **/
+	auto result = uint8_t(cpu->X + 1);
+	cpu->P.Negative = Sign(result);
+	cpu->P.Zero = result == 0;
+	cpu->X = result;
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_INY) {
-	// TODO: wait for implements: INY
 	/**
 	 * INY - Increment Y Register
 	 * Y,Z,N = Y+1
 	 * Adds one to the Y register setting the zero and negative flags
 	 * as appropriate.
 	 **/
+	auto result = uint8_t(cpu->Y + 1);
+	cpu->P.Negative = Sign(result);
+	cpu->P.Zero = result == 0;
+	cpu->Y = result;
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_LSR) {
-	// TODO: wait for implements: LSR
 	/**
 	 * LSR - Logical Shift Right
 	 * A,C,Z,N = A/2 or M,C,Z,N = M/2
@@ -400,12 +412,16 @@ OpExeFuncDefine(OP_LSR) {
 	 * The bit that was in bit 0 is shifted into the carry flag. Bit
 	 * 7 is set to zero.
 	 **/
+	auto result = uint8_t(MorA >> 1);
+	cpu->P.Carry = GetBit(MorA, 0x0);
+	cpu->P.Zero = result == 0;
+	cpu->P.Negative = false;
+	MorA = result;
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_NOP) {
-	// TODO: wait for implements: NOP
 	/**
 	 * NOP - No Operation
 	 * The NOP instruction causes no changes to the processor other
@@ -417,36 +433,44 @@ OpExeFuncDefine(OP_NOP) {
 }
 
 OpExeFuncDefine(OP_ROL) {
-	// TODO: wait for implements: ROL
 	/**
 	 * ROL - Rotate Left
 	 * Move each of the bits in either A or M one place to the left.
 	 * Bit 0 is filled with the current value of the carry flag whilst
 	 * the old bit 7 becomes the new carry flag value.
 	 **/
+	auto result = uint8_t(MorA << 1) | cpu->P.Carry;
+	cpu->P.Carry = GetBit(MorA, 0x7);
+	cpu->P.Zero = result == 0;
+	cpu->P.Negative = Sign(result);
+	MorA = result;
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_ROR) {
-	// TODO: wait for implements: ROR
 	/**
 	 * ROR - Rotate Right
 	 * Move each of the bits in either A or M one place to the right.
 	 * Bit 7 is filled with the current value of the carry flag whilst
 	 * the old bit 0 becomes the new carry flag value.
 	 **/
+	auto result = uint8_t(MorA >> 1) | (cpu->P.Carry) << 0x7;
+	cpu->P.Carry = GetBit(MorA, 0);
+	cpu->P.Zero = result == 0;
+	cpu->P.Negative = Sign(result);
+	MorA = result;
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_SEC) {
-	// TODO: wait for implements: SEC
 	/**
 	 * SEC - Set Carry Flag
 	 * C = 1
 	 * Set the carry flag to one.
 	 **/
+	cpu->P.Carry = true;
 
 	return self.cycles;
 }
@@ -463,157 +487,176 @@ OpExeFuncDefine(OP_SED) {
 }
 
 OpExeFuncDefine(OP_SEI) {
-	// TODO: wait for implements: SEI
 	/**
 	 * SEI - Set Interrupt Disable
 	 * I = 1
 	 * Set the interrupt disable flag to one.
 	 **/
+	cpu->P.IrqDisabled = true;
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_TAX) {
-	// TODO: wait for implements: TAX
 	/**
 	 * TAX - Transfer Accumulator to X
 	 * X = A
 	 * Copies the current contents of the accumulator into the X register
 	 * and sets the zero and negative flags as appropriate.
 	 **/
+	cpu->X = cpu->A;
+	cpu->P.Negative = Sign(cpu->X);
+	cpu->P.Zero = cpu->X == 0;
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_TAY) {
-	// TODO: wait for implements: TAY
 	/**
 	 * TAY - Transfer Accumulator to Y
 	 * Y = A
 	 * Copies the current contents of the accumulator into the Y register
 	 * and sets the zero and negative flags as appropriate.
 	 **/
+	cpu->Y = cpu->A;
+	cpu->P.Negative = Sign(cpu->Y);
+	cpu->P.Zero = cpu->Y == 0;
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_TSX) {
-	// TODO: wait for implements: TSX
 	/**
 	 * TSX - Transfer Stack Pointer to X
 	 * X = S
 	 * Copies the current contents of the stack register into the
 	 * X register and sets the zero and negative flags as appropriate.
 	 **/
+	cpu->X = cpu->SP;
+	cpu->P.Negative = Sign(cpu->X);
+	cpu->P.Zero = cpu->X == 0;
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_TXA) {
-	// TODO: wait for implements: TXA
 	/**
 	 * TXA - Transfer X to Accumulator
 	 * A = X
 	 * Copies the current contents of the X register into the accumulator
 	 * and sets the zero and negative flags as appropriate.
 	 **/
+	cpu->A = cpu->X;
+	cpu->P.Negative = Sign(cpu->A);
+	cpu->P.Zero = cpu->A == 0;
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_TXS) {
-	// TODO: wait for implements: TXS
 	/**
 	 * TXS - Transfer X to Stack Pointer
 	 * S = X
 	 * Copies the current contents of the X register into the stack
 	 * register.
 	 **/
+	cpu->SP = cpu->X;
+	cpu->P.Negative = Sign(cpu->SP);
+	cpu->P.Zero = cpu->SP == 0;
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_TYA) {
-	// TODO: wait for implements: TYA
 	/**
 	 * TYA - Transfer Y to Accumulator
 	 * A = Y
 	 * Copies the current contents of the Y register into the accumulator
 	 * and sets the zero and negative flags as appropriate.
 	 **/
+	cpu->A = cpu->Y;
+	cpu->P.Negative = Sign(cpu->A);
+	cpu->P.Zero = cpu->A == 0;
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_PHA) {
-	// TODO: wait for implements: PHA
 	/**
 	 * PHA - Push Accumulator
 	 * Pushes a copy of the accumulator on to the stack.
 	 **/
+	cpu->Push(cpu->A);
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_PHP) {
-	// TODO: wait for implements: PHP
 	/**
 	 * PHP - Push Processor Status
 	 * Pushes a copy of the status flags on to the stack.
 	 **/
+	cpu->Push(cpu->P);
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_PLA) {
-	// TODO: wait for implements: PLA
 	/**
 	 * PLA - Pull Accumulator
 	 * Pulls an 8 bit value from the stack and into the accumulator.
 	 * The zero and negative flags are set as appropriate.
 	 **/
+	cpu->A = cpu->Pop();
+	cpu->P.Negative = Sign(cpu->A);
+	cpu->P.Zero = cpu->A == 0;
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_PLP) {
-	// TODO: wait for implements: PLP
 	/**
 	 * PLP - Pull Processor Status
 	 * Pulls an 8 bit value from the stack and into the processor
 	 * flags. The flags will take on new states as determined by the
 	 * value pulled.
 	 **/
+	cpu->P = cpu->Pop();
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_RTI) {
-	// TODO: wait for implements: RTI
 	/**
 	 * RTI - Return from Interrupt
 	 * The RTI instruction is used at the end of an interrupt processing
 	 * routine. It pulls the processor flags from the stack followed
 	 * by the program counter.
 	 **/
+	cpu->P = cpu->Pop();
+	uint8_t PCL = cpu->Pop(), PCH = cpu->Pop();
+	updated_pc = (PCH << 0x8) | PCL;
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_RTS) {
-	// TODO: wait for implements: RTS
+	// TODO: need test
 	/**
 	 * RTS - Return from Subroutine
 	 * The RTS instruction is used at the end of a subroutine to return
 	 * to the calling routine. It pulls the program counter (minus one)
 	 * from the stack.
 	 **/
+	uint8_t PCL = cpu->Pop(), PCH = cpu->Pop();
+	updated_pc = (PCH << 0x8) | PCL;
+	++updated_pc;
+
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_BRK) {
-	// TODO: wait for implements: BRK
 	/**
 	 * BRK - Force Interrupt
 	 * The BRK instruction forces the generation of an interrupt request.
@@ -621,19 +664,31 @@ OpExeFuncDefine(OP_BRK) {
 	 * then the IRQ interrupt vector at $FFFE/F is loaded into the PC
 	 * and the break flag in the status set to one.
 	 **/
+	auto    PCH = uint8_t( ( (updated_pc) >> 0x8) & 0xff),
+			PCL = uint8_t((updated_pc) & 0xff);
+	cpu->Push(PCH);
+	cpu->Push(PCL);
+	cpu->Push(cpu->P);
+	cpu->P.BrkExecuted = true;
+	cpu->P.IrqDisabled = true;
+	updated_pc = cpu->Read16(static_cast<uint16_t>(CPU::InterruptVector::IRQ));
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_BCC) {
-	// TODO: wait for implements: BCC
+	// TODO: need test
 	/**
 	 * BCC - Branch if Carry Clear
 	 * If the carry flag is clear then add the relative displacement
 	 * to the program counter to cause a branch to a new location.
 	 **/
+	if (cpu->P.Carry == false) {
+		updated_pc += (int8_t) *operand;
+		return uint8_t(self.cycles + clossed_page + 1);
+	}
 
-	return self.cycles;
+	return self.cycles + clossed_page;
 }
 
 OpExeFuncDefine(OP_BCS) {
@@ -935,13 +990,18 @@ OpExeFuncDefine(OP_JMP) {
 }
 
 OpExeFuncDefine(OP_JSR) {
-	// TODO: wait for implements: JSR
+	// TODO: need test
 	/**
 	 * JSR - Jump to Subroutine
 	 * The JSR instruction pushes the address (minus one) of the return
 	 * point on to the stack and then sets the program counter to the
 	 * target memory address.
 	 **/
+	auto    PCH = uint8_t( ( (updated_pc - 1) >> 0x8) & 0xff),
+			PCL = uint8_t((updated_pc - 1) & 0xff);
+	cpu->Push(PCH);
+	cpu->Push(PCL);
+	updated_pc = cpu->Read16(uint16_t(cpu->PC + 1));
 
 	return self.cycles;
 }
