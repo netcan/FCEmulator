@@ -262,12 +262,12 @@ uint8_t CPU::Execute() {
 	uint16_t updated_pc = PC + optable[op_code]->bytes;
 
 	// 译码
-	uint8_t *oprand;
+	uint8_t *oprand = nullptr;
 	bool crossed_page = false;
 	FetchOperands(optable[op_code]->addressing_mode, oprand, crossed_page);
 
 	// 执行
-	uint8_t cycle = ExeFunc(optable[op_code], this, oprand, updated_pc);
+	uint8_t cycle = ExeFunc(optable[op_code], this, oprand, updated_pc, crossed_page);
 
 	// 更新PC
 	PC = updated_pc;
@@ -279,7 +279,6 @@ uint8_t CPU::Execute() {
 // 参考手册： http://obelisk.me.uk/6502/reference.html
 /**************** 指令实现区Begin ****************/
 OpExeFuncDefine(OP_ASL) {
-	// TODO: wait for implements: ASL
 	/**
 	 * ASL - Arithmetic Shift Left
 	 * A,Z,C,N = M*2 or M,Z,C,N = M*2
@@ -289,6 +288,12 @@ OpExeFuncDefine(OP_ASL) {
 	 * memory contents by 2 (ignoring 2's complement considerations),
 	 * setting the carry if the result will not fit in 8 bits.
 	 **/
+	uint16_t result = (operand ? *operand : cpu->A) << 1;
+	(operand ? *operand : cpu->A) <<= 1;
+
+	cpu->P.Zero = ((result & 0xff) == 0);
+	cpu->P.Carry = GetBit(result, 0x8);
+	cpu->P.Negative = GetBit(result, 0x7);
 
 	return self.cycles;
 }

@@ -56,6 +56,12 @@ TEST(ProcessorStatusCheck, test_field) {
 	P.IrqDisabled = 1;
 	EXPECT_TRUE(P.IrqDisabled);
 	EXPECT_EQ(P, 0xc4);
+
+	P = 0xb1;
+	P.Negative = 0;
+	P.Carry = 0;
+	P.Zero = 1;
+	EXPECT_EQ(P, 0x32);
 }
 
 TEST(BaseTest, test_bit_opt) {
@@ -169,9 +175,46 @@ TEST(CPUTest, opTest) {
 	EXPECT_EQ(cpu.Read8(0x8000), 0xf8); // SED
 
 	// 开始执行
-	EXPECT_EQ(cpu.Execute(), 2);
+	EXPECT_EQ(cpu.Execute(), 2);    // sed
 	EXPECT_TRUE(cpu.getP().Decimal);
-	EXPECT_EQ(cpu.Execute(), 2);
+
+	EXPECT_EQ(cpu.Execute(), 2);    // cld
 	EXPECT_FALSE(cpu.getP().Decimal);
 
+	cpu.getA() = 0xff;
+	EXPECT_EQ(cpu.Execute(), 2);    // asl
+	EXPECT_EQ(cpu.getA(), 0xfe);
+	EXPECT_FALSE(cpu.getP().Zero);
+	EXPECT_TRUE(cpu.getP().Negative);
+	EXPECT_TRUE(cpu.getP().Carry);
+
+	cpu.Write(0x0066, 0);
+	EXPECT_EQ(cpu.Execute(), 5);    // asl $66
+	EXPECT_EQ(cpu.Read8(0x66), 0x0);
+	EXPECT_TRUE(cpu.getP().Zero);
+	EXPECT_FALSE(cpu.getP().Negative);
+	EXPECT_FALSE(cpu.getP().Carry);
+
+	cpu.getX() = 1;
+	cpu.Write(0x0000, 0x80);
+	EXPECT_EQ(cpu.Execute(), 6);    // asl $ff,X
+	EXPECT_EQ(cpu.Read8(0x66), 0x0);
+	EXPECT_TRUE(cpu.getP().Zero);
+	EXPECT_FALSE(cpu.getP().Negative);
+	EXPECT_TRUE(cpu.getP().Carry);
+
+	cpu.Write(0x6666, 0x66);
+	EXPECT_EQ(cpu.Execute(), 6);    // asl $6666
+	EXPECT_EQ(cpu.Read8(0x6666), 0xcc);
+	EXPECT_FALSE(cpu.getP().Zero);
+	EXPECT_TRUE(cpu.getP().Negative);
+	EXPECT_FALSE(cpu.getP().Carry);
+
+	cpu.getX() = 0xff;
+	cpu.Write(0x6765, 0x66);
+	EXPECT_EQ(cpu.Execute(), 7);    // asl $6666,X
+	EXPECT_EQ(cpu.Read8(0x6765), 0xcc);
+	EXPECT_FALSE(cpu.getP().Zero);
+	EXPECT_TRUE(cpu.getP().Negative);
+	EXPECT_FALSE(cpu.getP().Carry);
 }

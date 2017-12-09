@@ -12,4 +12,9 @@ nmi:
 reset:
 	sed
 	cld
+	asl ; A << 1
+	asl $66 ; ZeroPage addressing
+	asl $ff,X ; ZeroPageX addressing
+	asl $6666 ; Absolute addressing
+	asl $6666,X ; Absolute,X addressing
 
