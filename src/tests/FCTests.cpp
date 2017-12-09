@@ -417,10 +417,146 @@ TEST(CPUTest, opTest) {
 	tmpPC = PC;
 	EXPECT_EQ(cpu.Execute(), 2);    // nop
 	P.Carry = false;
-	EXPECT_EQ(cpu.Execute(), 3);    // bcc $ff
-	P.Carry = true;
+	EXPECT_EQ(cpu.Execute(), 3);    // bcc *-1
 	EXPECT_EQ(PC, tmpPC);
 	EXPECT_EQ(cpu.Execute(), 2);    // nop
-	EXPECT_EQ(cpu.Execute(), 2);    // bcc $ff
+	P.Carry = true;
+	EXPECT_EQ(cpu.Execute(), 2);    // bcc *-1
+	EXPECT_EQ(PC, tmpPC + 3);
 
+	tmpPC = PC;
+	EXPECT_EQ(cpu.Execute(), 2);    // nop
+	EXPECT_EQ(cpu.Execute(), 3);    // bcs *-1
+	EXPECT_EQ(PC, tmpPC);
+	EXPECT_EQ(cpu.Execute(), 2);    // nop
+	P.Carry = false;
+	EXPECT_EQ(cpu.Execute(), 2);    // bcs *-1
+	EXPECT_EQ(PC, tmpPC + 3);
+
+	tmpPC = PC;
+	EXPECT_EQ(cpu.Execute(), 2);    // nop
+	P.Zero = true;
+	EXPECT_EQ(cpu.Execute(), 3);    // beq *-1
+	EXPECT_EQ(PC, tmpPC);
+	EXPECT_EQ(cpu.Execute(), 2);    // nop
+	P.Zero = false;
+	EXPECT_EQ(cpu.Execute(), 2);    // beq *-1
+	EXPECT_EQ(PC, tmpPC + 3);
+
+	tmpPC = PC;
+	EXPECT_EQ(cpu.Execute(), 2);    // nop
+	P.Negative = true;
+	EXPECT_EQ(cpu.Execute(), 3);    // bmi *-1
+	EXPECT_EQ(PC, tmpPC);
+	EXPECT_EQ(cpu.Execute(), 2);    // nop
+	P.Negative = false;
+	EXPECT_EQ(cpu.Execute(), 2);    // bmi *-1
+	EXPECT_EQ(PC, tmpPC + 3);
+
+	tmpPC = PC;
+	EXPECT_EQ(cpu.Execute(), 2);    // nop
+	P.Zero = false;
+	EXPECT_EQ(cpu.Execute(), 3);    // bne *-1
+	EXPECT_EQ(PC, tmpPC);
+	EXPECT_EQ(cpu.Execute(), 2);    // nop
+	P.Zero = true;
+	EXPECT_EQ(cpu.Execute(), 2);    // bne *-1
+	EXPECT_EQ(PC, tmpPC + 3);
+
+	tmpPC = PC;
+	EXPECT_EQ(cpu.Execute(), 2);    // nop
+	P.Negative = false;
+	EXPECT_EQ(cpu.Execute(), 3);    // bpl *-1
+	EXPECT_EQ(PC, tmpPC);
+	EXPECT_EQ(cpu.Execute(), 2);    // nop
+	P.Negative = true;
+	EXPECT_EQ(cpu.Execute(), 2);    // bpl *-1
+	EXPECT_EQ(PC, tmpPC + 3);
+
+	tmpPC = PC;
+	EXPECT_EQ(cpu.Execute(), 2);    // nop
+	P.Overflow = false;
+	EXPECT_EQ(cpu.Execute(), 3);    // bvc *-1
+	EXPECT_EQ(PC, tmpPC);
+	EXPECT_EQ(cpu.Execute(), 2);    // nop
+	P.Overflow = true;
+	EXPECT_EQ(cpu.Execute(), 2);    // bvc *-1
+	EXPECT_EQ(PC, tmpPC + 3);
+
+	tmpPC = PC;
+	EXPECT_EQ(cpu.Execute(), 2);    // nop
+	EXPECT_EQ(cpu.Execute(), 3);    // bvs *-1
+	EXPECT_EQ(PC, tmpPC);
+	EXPECT_EQ(cpu.Execute(), 2);    // nop
+	P.Overflow = false;
+	EXPECT_EQ(cpu.Execute(), 2);    // bvs *-1
+	EXPECT_EQ(PC, tmpPC + 3);
+
+	A = 1; // 0x01 + 0xff + 00 = 0x100
+	P.Carry = 0;
+	EXPECT_EQ(cpu.Execute(), 2);    // adc #$ff
+	EXPECT_EQ(A, 0x00);
+	EXPECT_TRUE(P.Carry);
+	EXPECT_FALSE(P.Overflow);
+	EXPECT_FALSE(P.Negative);
+	EXPECT_TRUE(P.Zero);
+
+	A = 0x7f, Y = 1; // 0x7f + 0x01 + 0x01 = 0x81
+	P.Carry = 1;
+	cpu.Write(0x6700, 0x01);
+	EXPECT_EQ(cpu.Execute(), 5);    // adc #66ff,Y
+	EXPECT_EQ(A, 0x81);
+	EXPECT_FALSE(P.Carry);
+	EXPECT_TRUE(P.Overflow);
+	EXPECT_TRUE(P.Negative);
+	EXPECT_FALSE(P.Zero);
+
+	A = 0xff, X = 1;  // 0xff + 0x80 + 0x00 = 0x17f
+	P.Carry = 0;
+	cpu.Write(0x67, 0x56);
+	cpu.Write(0x68, 0x78);
+	cpu.Write(0x7856, 0x80);
+	EXPECT_EQ(cpu.Execute(), 6);    // adc ($66,X)
+	EXPECT_EQ(A, 0x7f);
+	EXPECT_TRUE(P.Carry);
+	EXPECT_TRUE(P.Overflow);
+	EXPECT_FALSE(P.Negative);
+	EXPECT_FALSE(P.Zero);
+
+	A = 0x01, Y = 1; // 0x01 + 0x01 + 0x00 = 0x02
+	P.Carry = 0;
+	cpu.Write(0x66, 0xff);
+	cpu.Write(0x67, 0x66);
+	cpu.Write(0x6700, 0x01);
+	EXPECT_EQ(cpu.Execute(), 6);    // adc ($66),Y
+	EXPECT_EQ(A, 0x02);
+	EXPECT_FALSE(P.Carry);
+	EXPECT_FALSE(P.Overflow);
+	EXPECT_FALSE(P.Negative);
+	EXPECT_FALSE(P.Zero);
+
+	A = 0xa5, Y = 0x66;  // 0xa5 & 0x97 = 0x85
+	cpu.Write(0x6666, 0x97);
+	EXPECT_EQ(cpu.Execute(), 4);    // and $6600,Y
+	EXPECT_EQ(A, 0x85);
+	EXPECT_TRUE(P.Negative);
+	EXPECT_FALSE(P.Zero);
+
+	A = 0xff;
+	EXPECT_EQ(cpu.Execute(), 2);    // cmp #$ff
+	EXPECT_TRUE(P.Carry);
+	EXPECT_FALSE(P.Negative);
+	EXPECT_TRUE(P.Zero);
+
+	X = 0x00;
+	EXPECT_EQ(cpu.Execute(), 2);    // cpx #$ff
+	EXPECT_FALSE(P.Carry);
+	EXPECT_TRUE(P.Negative);
+	EXPECT_FALSE(P.Zero);
+
+	Y = 0xff;
+	EXPECT_EQ(cpu.Execute(), 2);    // cpy #$00
+	EXPECT_TRUE(P.Carry);
+	EXPECT_FALSE(P.Negative);
+	EXPECT_FALSE(P.Zero);
 }

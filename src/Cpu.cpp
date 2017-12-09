@@ -219,7 +219,7 @@ void CPU::FetchOperands(CPU::OpAddressingMode addressing_mode, uint8_t *& oprand
 			break;
 		case OpAddressingMode::IndexIndirect: // IDX
 			pointer = Read8(PC + 1);
-			addr = Read8((pointer + X) & 0xff) | Read8((pointer + X + 1) &0xff) << 0x08;
+			addr = Read16(pointer + X);
 			oprand = &mem[addr];
 			break;
 
@@ -262,12 +262,12 @@ uint8_t CPU::Execute() {
 	uint16_t updated_pc = PC + optable[op_code]->bytes;
 
 	// 译码
-	uint8_t *oprand = nullptr;
+	uint8_t *operand = nullptr;
 	bool crossed_page = false;
-	FetchOperands(optable[op_code]->addressing_mode, oprand, crossed_page);
+	FetchOperands(optable[op_code]->addressing_mode, operand, crossed_page);
 
 	// 执行
-	uint8_t cycle = ExeFunc(optable[op_code], this, oprand, updated_pc, crossed_page);
+	uint8_t cycle = ExeFunc(optable[op_code], this, operand, updated_pc, crossed_page);
 
 	// 更新PC
 	PC = updated_pc;
@@ -279,6 +279,13 @@ uint8_t CPU::Execute() {
 // 参考手册： http://obelisk.me.uk/6502/reference.html
 /**************** 指令实现区Begin ****************/
 #define MorA (operand ? *operand:cpu->A)
+#define Branch(field, value)    if (cpu->P.field == value) { \
+									updated_pc += (int8_t) *operand; \
+									return uint8_t(self.cycles + crossed_page + 1); \
+								} \
+								return self.cycles + crossed_page;
+#define FixCycle self.cycles + (crossed_page ? self.extra_cycles : uint8_t(0))
+
 OpExeFuncDefine(OP_ASL) {
 	/**
 	 * ASL - Arithmetic Shift Left
@@ -677,99 +684,86 @@ OpExeFuncDefine(OP_BRK) {
 }
 
 OpExeFuncDefine(OP_BCC) {
-	// TODO: need test
 	/**
 	 * BCC - Branch if Carry Clear
 	 * If the carry flag is clear then add the relative displacement
 	 * to the program counter to cause a branch to a new location.
 	 **/
-	if (cpu->P.Carry == false) {
-		updated_pc += (int8_t) *operand;
-		return uint8_t(self.cycles + clossed_page + 1);
-	}
 
-	return self.cycles + clossed_page;
+	Branch(Carry, false);
 }
 
 OpExeFuncDefine(OP_BCS) {
-	// TODO: wait for implements: BCS
 	/**
 	 * BCS - Branch if Carry Set
 	 * If the carry flag is set then add the relative displacement
 	 * to the program counter to cause a branch to a new location.
 	 **/
 
-	return self.cycles;
+	Branch(Carry, true);
 }
 
 OpExeFuncDefine(OP_BEQ) {
-	// TODO: wait for implements: BEQ
 	/**
 	 * BEQ - Branch if Equal
 	 * If the zero flag is set then add the relative displacement
 	 * to the program counter to cause a branch to a new location.
 	 **/
 
-	return self.cycles;
+	Branch(Zero, true);
 }
 
 OpExeFuncDefine(OP_BMI) {
-	// TODO: wait for implements: BMI
 	/**
 	 * BMI - Branch if Minus
 	 * If the negative flag is set then add the relative displacement
 	 * to the program counter to cause a branch to a new location.
 	 **/
 
-	return self.cycles;
+	Branch(Negative, true);
 }
 
 OpExeFuncDefine(OP_BNE) {
-	// TODO: wait for implements: BNE
 	/**
 	 * BNE - Branch if Not Equal
 	 * If the zero flag is clear then add the relative displacement
 	 * to the program counter to cause a branch to a new location.
 	 **/
 
-	return self.cycles;
+	Branch(Zero, false);
 }
 
 OpExeFuncDefine(OP_BPL) {
-	// TODO: wait for implements: BPL
 	/**
 	 * BPL - Branch if Positive
 	 * If the negative flag is clear then add the relative displacement
 	 * to the program counter to cause a branch to a new location.
 	 **/
 
-	return self.cycles;
+	Branch(Negative, false);
 }
 
 OpExeFuncDefine(OP_BVC) {
-	// TODO: wait for implements: BVC
 	/**
 	 * BVC - Branch if Overflow Clear
 	 * If the overflow flag is clear then add the relative displacement
 	 * to the program counter to cause a branch to a new location.
 	 **/
 
-	return self.cycles;
+	Branch(Overflow, false);
 }
 
 OpExeFuncDefine(OP_BVS) {
-	// TODO: wait for implements: BVS
 	/**
 	 * BVS - Branch if Overflow Set
 	 * If the overflow flag is set then add the relative displacement
 	 * to the program counter to cause a branch to a new location.
 	 **/
 
-	return self.cycles;
+	Branch(Overflow, true);
 }
 
 OpExeFuncDefine(OP_ADC) {
-	// TODO: wait for implements: ADC
 	/**
 	 * ADC - Add with Carry
 	 * A,Z,C,N = A+M+C
@@ -778,24 +772,33 @@ OpExeFuncDefine(OP_ADC) {
 	 * the carry bit is set, this enables multiple byte addition to be
 	 * performed.
 	 **/
+	uint16_t result = uint16_t(cpu->A) + uint16_t(*operand) + cpu->P.Carry;
+	cpu->P.Overflow = GetBit(result, 0x8) ^
+	                  GetBit( (cpu->A & uint8_t(0x7f)) + (*operand & uint8_t(0x7f)) + cpu->P.Carry, 0x7); // for signed number
+	cpu->P.Carry = GetBit(result, 0x8); // for usigned number
+	cpu->P.Zero = (result & 0xff) == 0;
+	cpu->P.Negative = Sign(uint8_t(result));
 
-	return self.cycles;
+	cpu->A = uint8_t(result);
+
+	return FixCycle;
 }
 
 OpExeFuncDefine(OP_AND) {
-	// TODO: wait for implements: AND
 	/**
 	 * AND - Logical AND
 	 * A,Z,N = A&M
 	 * A logical AND is performed, bit by bit, on the accumulator
 	 * contents using the contents of a byte of memory.
 	 **/
+	cpu->A &= *operand;
+	cpu->P.Negative = Sign(cpu->A);
+	cpu->P.Zero = cpu->A == 0;
 
-	return self.cycles;
+	return FixCycle;
 }
 
 OpExeFuncDefine(OP_CMP) {
-	// TODO: wait for implements: CMP
 	/**
 	 * CMP - Compare
 	 * Z,C,N = A-M
@@ -803,12 +806,14 @@ OpExeFuncDefine(OP_CMP) {
 	 * another memory held value and sets the zero and carry flags as
 	 * appropriate.
 	 **/
+	cpu->P.Carry = cpu->A >= *operand;
+	cpu->P.Zero = cpu->A == *operand;
+	cpu->P.Negative = cpu->A < *operand;
 
-	return self.cycles;
+	return FixCycle;
 }
 
 OpExeFuncDefine(OP_CPX) {
-	// TODO: wait for implements: CPX
 	/**
 	 * CPX - Compare X Register
 	 * Z,C,N = X-M
@@ -816,12 +821,14 @@ OpExeFuncDefine(OP_CPX) {
 	 * another memory held value and sets the zero and carry flags as
 	 * appropriate.
 	 **/
+	cpu->P.Carry = cpu->X >= *operand;
+	cpu->P.Zero = cpu->X == *operand;
+	cpu->P.Negative = cpu->X < *operand;
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_CPY) {
-	// TODO: wait for implements: CPY
 	/**
 	 * CPY - Compare Y Register
 	 * Z,C,N = Y-M
@@ -829,6 +836,9 @@ OpExeFuncDefine(OP_CPY) {
 	 * another memory held value and sets the zero and carry flags as
 	 * appropriate.
 	 **/
+	cpu->P.Carry = cpu->Y >= *operand;
+	cpu->P.Zero = cpu->Y == *operand;
+	cpu->P.Negative = cpu->Y < *operand;
 
 	return self.cycles;
 }

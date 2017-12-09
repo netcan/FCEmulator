@@ -9,7 +9,7 @@
 #ifndef FCEMU_CPU_H
 #define FCEMU_CPU_H
 #include "Base.h"
-#define OpExeFuncArgs const Operation& self, CPU *cpu, uint8_t *operand, uint16_t& updated_pc, bool &clossed_page
+#define OpExeFuncArgs const Operation& self, CPU *cpu, uint8_t *operand, uint16_t& updated_pc, bool &crossed_page
 #define OpExeFuncDecl(func_name) static uint8_t func_name(OpExeFuncArgs)
 #define OpExeFuncDefine(func_name) uint8_t CPU::func_name(OpExeFuncArgs)
 #define ExeFunc(op_code_entity, cpu, oprand, updated_pc, crossed_page) op_code_entity->exe(*op_code_entity, cpu, oprand, updated_pc, crossed_page)

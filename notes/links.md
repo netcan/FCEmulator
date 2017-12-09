@@ -16,3 +16,4 @@
 	- [http://nesdev.com/6502guid.txt](http://nesdev.com/6502guid.txt)
 	- [https://en.wikibooks.org/wiki/6502_Assembly](https://en.wikibooks.org/wiki/6502_Assembly)
 
+- Overflow与Carry位：[http://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt](http://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt)

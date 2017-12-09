@@ -66,5 +66,37 @@ reset:
 
     brk
 
-bcctest:    nop
-            bcc bcctest
+bcc_test:   nop
+            bcc bcc_test
+
+    nop
+    bcs *-1
+
+    nop
+    beq *-1
+
+    nop
+    bmi *-1
+
+    nop
+    bne *-1
+
+    nop
+    bpl *-1
+
+    nop
+    bvc *-1
+
+    nop
+    bvs *-1
+
+    adc #$ff
+    adc $66ff,Y ; Absolute,Y addressing
+    adc ($66,X) ; IndexIndirect(IDX) addressing
+    adc ($66),Y ; IndirectIndex(IDY) addressing
+
+    and $6600,Y
+
+    cmp #$ff
+    cpx #$ff
+    cpy #$00
