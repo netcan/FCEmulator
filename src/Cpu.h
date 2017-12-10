@@ -46,6 +46,7 @@ public:
 	PSField<7> Negative;      // 当运算结果最高位第7位为1的时候置位，表明负数
 	PSField<6> Overflow;      // 当两个补码运算产生非法的结果置位，例如正+正为负的时候
 	PSField<4> BrkExecuted;   // 用于标记当BRK指令执行后，产生的IRQ中断（软件中断）
+	PSField<5> Invalid;       // 无效位
 	PSField<3> Decimal;       // 6502通过设置该标志位切换到BCD模式，由于2A03不支持BCD，所以这位是无效的
 	PSField<2> IrqDisabled;   // 通过设置该位可以屏蔽IRQ中断
 	PSField<1> Zero;          // 当运算结果为0的时候置位
@@ -117,7 +118,7 @@ public:
 	friend class Cartridge;
 	friend struct Operation;
 
-	CPU() : P(0x34), A(0), X(0), Y(0), SP(0xfd) { }; // Power Up
+	CPU() : P(0x34), A(0), X(0), Y(0), SP(0xfd), cycles(0) { }; // Power Up
 	// 读取一个字节
 	inline uint8_t Read8(uint16_t addr) const { return mem[addr]; }
 	// 读取一个字
@@ -138,6 +139,7 @@ public:
 	uint8_t &getY() { return Y; }
 	uint8_t &getSP() { return SP; }
 	uint16_t &getPC() { return PC; }
+	uint32_t getCycles() { return cycles; }
 #endif
 private:
 	uint16_t PC; // 程序计数器

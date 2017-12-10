@@ -398,13 +398,11 @@ TEST(CPUTest, opTest) {
 	EXPECT_TRUE(P.Negative);
 
 	EXPECT_EQ(cpu.Execute(), 4);    // plp
-	EXPECT_EQ(P, 0xdd);
 	EXPECT_EQ(SP, 0x00);
 	EXPECT_FALSE(P.Zero);
 	EXPECT_TRUE(P.Negative);
 
 	uint16_t tmpPC = PC;
-	uint8_t tmpP = P;
 
 	EXPECT_EQ(cpu.Execute(), 7);    // brk
 	EXPECT_TRUE(P.IrqDisabled);
@@ -412,7 +410,6 @@ TEST(CPUTest, opTest) {
 
 	EXPECT_EQ(cpu.Execute(), 6);    // rti
 	EXPECT_EQ(tmpPC + 1, PC);
-	EXPECT_EQ(tmpP, P);
 
 	tmpPC = PC;
 	EXPECT_EQ(cpu.Execute(), 2);    // nop
@@ -551,13 +548,13 @@ TEST(CPUTest, opTest) {
 	X = 0x00;
 	EXPECT_EQ(cpu.Execute(), 2);    // cpx #$ff
 	EXPECT_FALSE(P.Carry);
-	EXPECT_TRUE(P.Negative);
+	EXPECT_FALSE(P.Negative);
 	EXPECT_FALSE(P.Zero);
 
 	Y = 0xff;
 	EXPECT_EQ(cpu.Execute(), 2);    // cpy #$00
 	EXPECT_TRUE(P.Carry);
-	EXPECT_FALSE(P.Negative);
+	EXPECT_TRUE(P.Negative);
 	EXPECT_FALSE(P.Zero);
 
 	A = 0xff;  // 0xff ^ 0x00 = 0xff
@@ -593,7 +590,7 @@ TEST(CPUTest, opTest) {
 	A = 0x01; // 0x01 - 0xff = 0x2
 	EXPECT_EQ(cpu.Execute(), 2);    // sbc #$ff
 	EXPECT_EQ(A, 0x02);
-	EXPECT_TRUE(P.Carry);
+	EXPECT_FALSE(P.Carry);
 	EXPECT_FALSE(P.Overflow);
 	EXPECT_FALSE(P.Negative);
 	EXPECT_FALSE(P.Zero);
@@ -603,7 +600,7 @@ TEST(CPUTest, opTest) {
 	EXPECT_EQ(cpu.Execute(), 3);    // bit $66
 	EXPECT_EQ(A, 0x3f);
 	EXPECT_TRUE(P.Overflow);
-	EXPECT_TRUE(P.Carry);
+	EXPECT_TRUE(P.Negative);
 	EXPECT_TRUE(P.Zero);
 
 
@@ -647,5 +644,47 @@ TEST(CPUTest, opTest) {
 	EXPECT_EQ(PC, 0xcdab);
 
 	PC = tmpPC + 3;
+
+}
+
+TEST(CPUTest, romTest) {
+	CPU cpu;
+	Cartridge cart;
+	uint8_t &X = cpu.getX(), &Y = cpu.getY(),
+			&SP = cpu.getSP(), &A = cpu.getA();
+	uint16_t &PC = cpu.getPC();
+	ProcessorStatus &P = cpu.getP();
+
+	int targetX, targetY, targetSP, targetA, targetP, targetOpcode, targetCYC, targetPC;
+
+	EXPECT_TRUE(cart.LoadRomFile(cpu, "./nestest.nes"));
+	EXPECT_TRUE(cart.PrintHeader());
+	cpu.Reset();
+
+	PC = 0xc000;
+	P = 0x24;
+	FILE* log = fopen("nestest.log", "r");
+	char row[0xff], msg[0xff], opCodeName[5];
+	while(fgets(row, sizeof(row), log)) {
+		sscanf(row, "%X%X", &targetPC, &targetOpcode);
+		sscanf(row + 11, "%s", opCodeName);
+		sscanf(row + strlen(row) - 35, "A:%X X:%X Y:%X P:%X SP:%X CYC:%d",
+		       &targetA, &targetX, &targetY, &targetP, &targetSP, &targetCYC
+		);
+		int CYC = cpu.getCycles() * 3 % 341;
+		sprintf(msg, "%s: %X(%X) %02X(%02X) A:%02X(%02X) X:%02X(%02X) Y:%02X(%02X) P:%02X(%02X) SP:%02X(%02X) CYC:%3d(%3d)\n",
+		        opCodeName, PC, targetPC, cpu.Read8(PC), targetOpcode,
+		        A, targetA, X, targetX, Y, targetY, (uint8_t)P, targetP,
+		        SP, targetSP, CYC, targetCYC
+		);
+		ASSERT_EQ(P, targetP) << msg;
+		ASSERT_EQ(A, targetA) << msg;
+		ASSERT_EQ(X, targetX) << msg;
+		ASSERT_EQ(Y, targetY) << msg;
+		ASSERT_EQ(SP, targetSP) << msg;
+		ASSERT_EQ(PC, targetPC) << msg;
+		ASSERT_EQ(CYC, targetCYC) << msg;
+		cpu.Execute();
+	}
 
 }

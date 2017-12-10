@@ -8,7 +8,7 @@
 #include "Cpu.h"
 
 ProcessorStatus::ProcessorStatus(uint8_t value): Negative(this->P), Overflow(this->P),
-                                    BrkExecuted(this->P), Decimal(this->P),
+                                    BrkExecuted(this->P), Invalid(this->P), Decimal(this->P),
                                     IrqDisabled(this->P), Zero(this->P),
                                     Carry(this->P) {
 	P = value; // 初值
@@ -289,6 +289,10 @@ uint8_t CPU::Execute() {
 					cpu->P.Negative = Sign(cpu->R); \
 					cpu->P.Zero = cpu->R == 0; \
 					return FixCycle;
+#define TRNS(T,F)   T = F; \
+					cpu->P.Negative = Sign(T); \
+					cpu->P.Zero = T == 0; \
+					return self.cycles;
 
 OpExeFuncDefine(OP_ASL) {
 	/**
@@ -512,11 +516,7 @@ OpExeFuncDefine(OP_TAX) {
 	 * Copies the current contents of the accumulator into the X register
 	 * and sets the zero and negative flags as appropriate.
 	 **/
-	cpu->X = cpu->A;
-	cpu->P.Negative = Sign(cpu->X);
-	cpu->P.Zero = cpu->X == 0;
-
-	return self.cycles;
+	TRNS(cpu->X, cpu->A);
 }
 
 OpExeFuncDefine(OP_TAY) {
@@ -526,11 +526,7 @@ OpExeFuncDefine(OP_TAY) {
 	 * Copies the current contents of the accumulator into the Y register
 	 * and sets the zero and negative flags as appropriate.
 	 **/
-	cpu->Y = cpu->A;
-	cpu->P.Negative = Sign(cpu->Y);
-	cpu->P.Zero = cpu->Y == 0;
-
-	return self.cycles;
+	TRNS(cpu->Y, cpu->A);
 }
 
 OpExeFuncDefine(OP_TSX) {
@@ -540,11 +536,7 @@ OpExeFuncDefine(OP_TSX) {
 	 * Copies the current contents of the stack register into the
 	 * X register and sets the zero and negative flags as appropriate.
 	 **/
-	cpu->X = cpu->SP;
-	cpu->P.Negative = Sign(cpu->X);
-	cpu->P.Zero = cpu->X == 0;
-
-	return self.cycles;
+	TRNS(cpu->X, cpu->SP);
 }
 
 OpExeFuncDefine(OP_TXA) {
@@ -554,11 +546,7 @@ OpExeFuncDefine(OP_TXA) {
 	 * Copies the current contents of the X register into the accumulator
 	 * and sets the zero and negative flags as appropriate.
 	 **/
-	cpu->A = cpu->X;
-	cpu->P.Negative = Sign(cpu->A);
-	cpu->P.Zero = cpu->A == 0;
-
-	return self.cycles;
+	TRNS(cpu->A, cpu->X);
 }
 
 OpExeFuncDefine(OP_TXS) {
@@ -568,10 +556,10 @@ OpExeFuncDefine(OP_TXS) {
 	 * Copies the current contents of the X register into the stack
 	 * register.
 	 **/
+	// Note that TXS (Transfer X to S) is not an arithmetic operation
 	cpu->SP = cpu->X;
-	cpu->P.Negative = Sign(cpu->SP);
-	cpu->P.Zero = cpu->SP == 0;
-
+	cpu->P.Negative = true;
+	cpu->P.Zero = cpu->X == 0;
 	return self.cycles;
 }
 
@@ -582,11 +570,7 @@ OpExeFuncDefine(OP_TYA) {
 	 * Copies the current contents of the Y register into the accumulator
 	 * and sets the zero and negative flags as appropriate.
 	 **/
-	cpu->A = cpu->Y;
-	cpu->P.Negative = Sign(cpu->A);
-	cpu->P.Zero = cpu->A == 0;
-
-	return self.cycles;
+	TRNS(cpu->A, cpu->Y);
 }
 
 OpExeFuncDefine(OP_PHA) {
@@ -604,7 +588,7 @@ OpExeFuncDefine(OP_PHP) {
 	 * PHP - Push Processor Status
 	 * Pushes a copy of the status flags on to the stack.
 	 **/
-	cpu->Push(cpu->P);
+	cpu->Push(cpu->P | 0x10);
 
 	return self.cycles;
 }
@@ -629,7 +613,11 @@ OpExeFuncDefine(OP_PLP) {
 	 * flags. The flags will take on new states as determined by the
 	 * value pulled.
 	 **/
+	// Two instructions (PLP and RTI) pull a byte from the stack and set all the flags. They ignore bits 5 and 4.
+	bool brk = cpu->P.BrkExecuted;
 	cpu->P = cpu->Pop();
+	cpu->P.BrkExecuted = brk;
+	cpu->P.Invalid = true;
 
 	return self.cycles;
 }
@@ -641,7 +629,12 @@ OpExeFuncDefine(OP_RTI) {
 	 * routine. It pulls the processor flags from the stack followed
 	 * by the program counter.
 	 **/
+	// Two instructions (PLP and RTI) pull a byte from the stack and set all the flags. They ignore bits 5 and 4.
+	bool brk = cpu->P.BrkExecuted;
 	cpu->P = cpu->Pop();
+	cpu->P.BrkExecuted = brk;
+	cpu->P.Invalid = true;
+
 	uint8_t PCL = cpu->Pop(), PCH = cpu->Pop();
 	updated_pc = (PCH << 0x8) | PCL;
 
@@ -675,8 +668,8 @@ OpExeFuncDefine(OP_BRK) {
 			PCL = uint8_t((updated_pc) & 0xff);
 	cpu->Push(PCH);
 	cpu->Push(PCL);
-	cpu->Push(cpu->P);
 	cpu->P.BrkExecuted = true;
+	cpu->Push(cpu->P);
 	cpu->P.IrqDisabled = true;
 	updated_pc = cpu->Read16(static_cast<uint16_t>(CPU::InterruptVector::IRQ));
 
@@ -804,7 +797,7 @@ OpExeFuncDefine(OP_CMP) {
 	 **/
 	cpu->P.Carry = cpu->A >= *operand;
 	cpu->P.Zero = cpu->A == *operand;
-	cpu->P.Negative = cpu->A < *operand;
+	cpu->P.Negative = Sign(cpu->A - *operand);
 
 	return FixCycle;
 }
@@ -819,7 +812,7 @@ OpExeFuncDefine(OP_CPX) {
 	 **/
 	cpu->P.Carry = cpu->X >= *operand;
 	cpu->P.Zero = cpu->X == *operand;
-	cpu->P.Negative = cpu->X < *operand;
+	cpu->P.Negative = Sign(cpu->X - *operand);
 
 	return self.cycles;
 }
@@ -834,7 +827,7 @@ OpExeFuncDefine(OP_CPY) {
 	 **/
 	cpu->P.Carry = cpu->Y >= *operand;
 	cpu->P.Zero = cpu->Y == *operand;
-	cpu->P.Negative = cpu->Y < *operand;
+	cpu->P.Negative = Sign(cpu->Y - *operand);
 
 	return self.cycles;
 }
@@ -901,16 +894,21 @@ OpExeFuncDefine(OP_SBC) {
 	 * overflow occurs the carry bit is clear, this enables multiple
 	 * byte subtraction to be performed.
 	 **/
-	uint16_t result = uint16_t(cpu->A) - uint16_t(*operand) - uint16_t(1 - cpu->P.Carry);
+
+	// 不能直接A-M-(1-C)，直接减有坑，需要把减法换成加法运算
+	// A-M-(1-C) = A-M-1+C = A-(M+1)+C = A + [~(M+1) + 1] + C = A + ~M + C
+
+	auto tmpOperand = uint8_t(~*operand); // 将tmpOperand取-(*operand+1)
+	uint16_t result = uint16_t(cpu->A) + uint16_t(tmpOperand) + cpu->P.Carry;
 	cpu->P.Overflow = GetBit(result, 0x8) ^
-	                  GetBit( (cpu->A & uint8_t(0x7f)) - (*operand & uint8_t(0x7f)) - uint8_t(cpu->P.Carry), 0x7); // for signed number
-	cpu->P.Carry = GetBit(result, 0x8); // for usigned number
+	                  GetBit( (cpu->A & uint8_t(0x7f)) + (tmpOperand & uint8_t(0x7f)) + cpu->P.Carry, 0x7); // for signed number
+	cpu->P.Carry = GetBit(result,  0x8); // for usigned number
 	cpu->P.Zero = (result & 0xff) == 0;
 	cpu->P.Negative = Sign(uint8_t(result));
-
 	cpu->A = uint8_t(result);
 
 	return FixCycle;
+
 }
 
 OpExeFuncDefine(OP_BIT) {
@@ -923,7 +921,7 @@ OpExeFuncDefine(OP_BIT) {
 	 * is not kept. Bits 7 and 6 of the value from memory are copied
 	 * into the N and V flags.
 	 **/
-	cpu->P.Carry = GetBit(*operand, 7);
+	cpu->P.Negative = GetBit(*operand, 7);
 	cpu->P.Overflow = GetBit(*operand, 6);
 	cpu->P.Zero = (cpu->A & *operand) == 0;
 

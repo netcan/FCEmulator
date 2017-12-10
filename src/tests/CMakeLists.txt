@@ -6,6 +6,7 @@ add_custom_target(
         COMMAND ld65 -t nes -o test.nes test.o
 )
 configure_file(nestest.nes nestest.nes COPYONLY)
+configure_file(nestest.log nestest.log COPYONLY)
 
 add_executable(FCtests
         FCTests.cpp)
