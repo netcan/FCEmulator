@@ -219,7 +219,7 @@ void CPU::FetchOperands(CPU::OpAddressingMode addressing_mode, uint8_t *& oprand
 			break;
 		case OpAddressingMode::IndexIndirect: // IDX
 			pointer = Read8(PC + 1);
-			addr = Read16(pointer + X);
+			addr = (mem[(pointer + 1 + X) & 0xff] << 8) | mem[(pointer + X) & 0xff];
 			oprand = &mem[addr];
 			break;
 
@@ -285,6 +285,10 @@ uint8_t CPU::Execute() {
 								} \
 								return self.cycles + crossed_page;
 #define FixCycle self.cycles + (crossed_page ? self.extra_cycles : uint8_t(0))
+#define OpRM(R, op) cpu->R op *operand; \
+					cpu->P.Negative = Sign(cpu->R); \
+					cpu->P.Zero = cpu->R == 0; \
+					return FixCycle;
 
 OpExeFuncDefine(OP_ASL) {
 	/**
@@ -358,10 +362,10 @@ OpExeFuncDefine(OP_DEX) {
 	 * Subtracts one from the X register setting the zero and negative
 	 * flags as appropriate.
 	 **/
-	auto result = uint8_t(cpu->X - 1);
-	cpu->P.Negative = Sign(result);
-	cpu->P.Zero = result == 0;
-	cpu->X = result;
+
+	--cpu->X;
+	cpu->P.Zero = cpu->X == 0;
+	cpu->P.Negative = Sign(cpu->X);
 
 	return self.cycles;
 }
@@ -373,10 +377,9 @@ OpExeFuncDefine(OP_DEY) {
 	 * Subtracts one from the Y register setting the zero and negative
 	 * flags as appropriate.
 	 **/
-	auto result = uint8_t(cpu->Y - 1);
-	cpu->P.Negative = Sign(result);
-	cpu->P.Zero = result == 0;
-	cpu->Y = result;
+	--cpu->Y;
+	cpu->P.Zero = cpu->Y == 0;
+	cpu->P.Negative = Sign(cpu->Y);
 
 	return self.cycles;
 }
@@ -388,10 +391,9 @@ OpExeFuncDefine(OP_INX) {
 	 * Adds one to the X register setting the zero and negative flags
 	 * as appropriate.
 	 **/
-	auto result = uint8_t(cpu->X + 1);
-	cpu->P.Negative = Sign(result);
-	cpu->P.Zero = result == 0;
-	cpu->X = result;
+	++cpu->X;
+	cpu->P.Zero = cpu->X == 0;
+	cpu->P.Negative = Sign(cpu->X);
 
 	return self.cycles;
 }
@@ -403,10 +405,9 @@ OpExeFuncDefine(OP_INY) {
 	 * Adds one to the Y register setting the zero and negative flags
 	 * as appropriate.
 	 **/
-	auto result = uint8_t(cpu->Y + 1);
-	cpu->P.Negative = Sign(result);
-	cpu->P.Zero = result == 0;
-	cpu->Y = result;
+	++cpu->Y;
+	cpu->P.Zero = cpu->Y == 0;
+	cpu->P.Negative = Sign(cpu->Y);
 
 	return self.cycles;
 }
@@ -648,7 +649,6 @@ OpExeFuncDefine(OP_RTI) {
 }
 
 OpExeFuncDefine(OP_RTS) {
-	// TODO: need test
 	/**
 	 * RTS - Return from Subroutine
 	 * The RTS instruction is used at the end of a subroutine to return
@@ -791,11 +791,7 @@ OpExeFuncDefine(OP_AND) {
 	 * A logical AND is performed, bit by bit, on the accumulator
 	 * contents using the contents of a byte of memory.
 	 **/
-	cpu->A &= *operand;
-	cpu->P.Negative = Sign(cpu->A);
-	cpu->P.Zero = cpu->A == 0;
-
-	return FixCycle;
+	OpRM(A, &=);
 }
 
 OpExeFuncDefine(OP_CMP) {
@@ -844,31 +840,26 @@ OpExeFuncDefine(OP_CPY) {
 }
 
 OpExeFuncDefine(OP_EOR) {
-	// TODO: wait for implements: EOR
 	/**
 	 * EOR - Exclusive OR
 	 * A,Z,N = A^M
 	 * An exclusive OR is performed, bit by bit, on the accumulator
 	 * contents using the contents of a byte of memory.
 	 **/
-
-	return self.cycles;
+	OpRM(A, ^=);
 }
 
 OpExeFuncDefine(OP_LDA) {
-	// TODO: wait for implements: LDA
 	/**
 	 * LDA - Load Accumulator
 	 * A,Z,N = M
 	 * Loads a byte of memory into the accumulator setting the zero
 	 * and negative flags as appropriate.
 	 **/
-
-	return self.cycles;
+	OpRM(A, =);
 }
 
 OpExeFuncDefine(OP_LDX) {
-	// TODO: wait for implements: LDX
 	/**
 	 * LDX - Load X Register
 	 * X,Z,N = M
@@ -876,23 +867,21 @@ OpExeFuncDefine(OP_LDX) {
 	 * and negative flags as appropriate.
 	 **/
 
-	return self.cycles;
+	OpRM(X, =);
 }
 
 OpExeFuncDefine(OP_LDY) {
-	// TODO: wait for implements: LDY
 	/**
 	 * LDY - Load Y Register
 	 * Y,Z,N = M
 	 * Loads a byte of memory into the Y register setting the zero
 	 * and negative flags as appropriate.
 	 **/
+	OpRM(Y, =);
 
-	return self.cycles;
 }
 
 OpExeFuncDefine(OP_ORA) {
-	// TODO: wait for implements: ORA
 	/**
 	 * ORA - Logical Inclusive OR
 	 * A,Z,N = A|M
@@ -900,11 +889,10 @@ OpExeFuncDefine(OP_ORA) {
 	 * contents using the contents of a byte of memory.
 	 **/
 
-	return self.cycles;
+	OpRM(A, |=);
 }
 
 OpExeFuncDefine(OP_SBC) {
-	// TODO: wait for implements: SBC
 	/**
 	 * SBC - Subtract with Carry
 	 * A,Z,C,N = A-M-(1-C)
@@ -913,12 +901,19 @@ OpExeFuncDefine(OP_SBC) {
 	 * overflow occurs the carry bit is clear, this enables multiple
 	 * byte subtraction to be performed.
 	 **/
+	uint16_t result = uint16_t(cpu->A) - uint16_t(*operand) - uint16_t(1 - cpu->P.Carry);
+	cpu->P.Overflow = GetBit(result, 0x8) ^
+	                  GetBit( (cpu->A & uint8_t(0x7f)) - (*operand & uint8_t(0x7f)) - uint8_t(cpu->P.Carry), 0x7); // for signed number
+	cpu->P.Carry = GetBit(result, 0x8); // for usigned number
+	cpu->P.Zero = (result & 0xff) == 0;
+	cpu->P.Negative = Sign(uint8_t(result));
 
-	return self.cycles;
+	cpu->A = uint8_t(result);
+
+	return FixCycle;
 }
 
 OpExeFuncDefine(OP_BIT) {
-	// TODO: wait for implements: BIT
 	/**
 	 * BIT - Bit Test
 	 * A & M, N = M7, V = M6
@@ -928,45 +923,47 @@ OpExeFuncDefine(OP_BIT) {
 	 * is not kept. Bits 7 and 6 of the value from memory are copied
 	 * into the N and V flags.
 	 **/
+	cpu->P.Carry = GetBit(*operand, 7);
+	cpu->P.Overflow = GetBit(*operand, 6);
+	cpu->P.Zero = (cpu->A & *operand) == 0;
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_STA) {
-	// TODO: wait for implements: STA
 	/**
 	 * STA - Store Accumulator
 	 * M = A
 	 * Stores the contents of the accumulator into memory.
 	 **/
 
+	*operand = cpu->A;
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_STX) {
-	// TODO: wait for implements: STX
 	/**
 	 * STX - Store X Register
 	 * M = X
 	 * Stores the contents of the X register into memory.
 	 **/
 
+	*operand = cpu->X;
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_STY) {
-	// TODO: wait for implements: STY
 	/**
 	 * STY - Store Y Register
 	 * M = Y
 	 * Stores the contents of the Y register into memory.
 	 **/
 
+	*operand = cpu->Y;
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_DEC) {
-	// TODO: wait for implements: DEC
 	/**
 	 * DEC - Decrement Memory
 	 * M,Z,N = M-1
@@ -974,33 +971,47 @@ OpExeFuncDefine(OP_DEC) {
 	 * setting the zero and negative flags as appropriate.
 	 **/
 
+	--*operand;
+	cpu->P.Zero = *operand == 0;
+	cpu->P.Negative = Sign(*operand);
+
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_INC) {
-	// TODO: wait for implements: INC
 	/**
 	 * INC - Increment Memory
 	 * M,Z,N = M+1
 	 * Adds one to the value held at a specified memory location setting
 	 * the zero and negative flags as appropriate.
 	 **/
+	++*operand;
+	cpu->P.Zero = *operand == 0;
+	cpu->P.Negative = Sign(*operand);
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_JMP) {
-	// TODO: wait for implements: JMP
 	/**
 	 * JMP - Jump
 	 * Sets the program counter to the address specified by the operand.
 	 **/
 
+	if(operand) // Absolute addressing
+		updated_pc = cpu->Read16(uint16_t(cpu->PC+1));
+	else { // Indirect addressing
+		uint16_t indirect_address = cpu->Read16(uint16_t(cpu->PC+1));
+		auto PCH = uint8_t((indirect_address & 0xff00) >> 0x8),
+				PCL = uint8_t(indirect_address & 0xff);
+		updated_pc = (cpu->Read8(indirect_address)) |
+					 (cpu->Read8(PCH << 0x8 | uint8_t(PCL + 1) ) << 0x8);
+	}
+
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_JSR) {
-	// TODO: need test
 	/**
 	 * JSR - Jump to Subroutine
 	 * The JSR instruction pushes the address (minus one) of the return
@@ -1008,7 +1019,7 @@ OpExeFuncDefine(OP_JSR) {
 	 * target memory address.
 	 **/
 	auto    PCH = uint8_t( ( (updated_pc - 1) >> 0x8) & 0xff),
-			PCL = uint8_t((updated_pc - 1) & 0xff);
+			PCL = uint8_t( (updated_pc - 1) & 0xff);
 	cpu->Push(PCH);
 	cpu->Push(PCL);
 	updated_pc = cpu->Read16(uint16_t(cpu->PC + 1));

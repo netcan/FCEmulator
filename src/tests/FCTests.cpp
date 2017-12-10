@@ -559,4 +559,93 @@ TEST(CPUTest, opTest) {
 	EXPECT_TRUE(P.Carry);
 	EXPECT_FALSE(P.Negative);
 	EXPECT_FALSE(P.Zero);
+
+	A = 0xff;  // 0xff ^ 0x00 = 0xff
+	EXPECT_EQ(cpu.Execute(), 2);    // eor #$00
+	EXPECT_EQ(A, 0xff);
+	EXPECT_TRUE(P.Negative);
+	EXPECT_FALSE(P.Zero);
+
+	EXPECT_EQ(cpu.Execute(), 2);    // lda #$23
+	EXPECT_EQ(A, 0x23);
+	EXPECT_FALSE(P.Negative);
+	EXPECT_FALSE(P.Zero);
+
+	Y = 6;
+	cpu.Write(0x66, 0x66);
+	EXPECT_EQ(cpu.Execute(), 4);    // ldx $60,Y
+	EXPECT_EQ(X, 0x66);
+	EXPECT_FALSE(P.Negative);
+	EXPECT_FALSE(P.Zero);
+
+	EXPECT_EQ(cpu.Execute(), 2);    // ldy #$aa
+	EXPECT_EQ(Y, 0xaa);
+	EXPECT_TRUE(P.Negative);
+	EXPECT_FALSE(P.Zero);
+
+	A = 0x4f; // 0x4f | 0xab = 0xef
+	EXPECT_EQ(cpu.Execute(), 2);    // ora #$0xab
+	EXPECT_EQ(A, 0xef);
+	EXPECT_TRUE(P.Negative);
+	EXPECT_FALSE(P.Zero);
+
+	P.Carry = 1;
+	A = 0x01; // 0x01 - 0xff = 0x2
+	EXPECT_EQ(cpu.Execute(), 2);    // sbc #$ff
+	EXPECT_EQ(A, 0x02);
+	EXPECT_TRUE(P.Carry);
+	EXPECT_FALSE(P.Overflow);
+	EXPECT_FALSE(P.Negative);
+	EXPECT_FALSE(P.Zero);
+
+	A = 0x3f;  // 0x3f & 0xc0 = 0x00
+	cpu.Write(0x66, 0xc0);
+	EXPECT_EQ(cpu.Execute(), 3);    // bit $66
+	EXPECT_EQ(A, 0x3f);
+	EXPECT_TRUE(P.Overflow);
+	EXPECT_TRUE(P.Carry);
+	EXPECT_TRUE(P.Zero);
+
+
+	A = 0x6f;
+	EXPECT_EQ(cpu.Execute(), 3);    // sta $23
+	EXPECT_EQ(cpu.Read8(0x23), A);
+
+	X = 0xee;
+	EXPECT_EQ(cpu.Execute(), 3);    // stx $23
+	EXPECT_EQ(cpu.Read8(0x23), X);
+
+	Y = 0xaa;
+	EXPECT_EQ(cpu.Execute(), 3);    // sty $23
+	EXPECT_EQ(cpu.Read8(0x23), Y);
+
+	cpu.Write(0x23, 0x00);
+	EXPECT_EQ(cpu.Execute(), 5);    // dec $23
+	EXPECT_EQ(cpu.Read8(0x23), 0xff);
+	EXPECT_FALSE(P.Zero);
+	EXPECT_TRUE(P.Negative);
+
+	EXPECT_EQ(cpu.Execute(), 5);    // inc $23
+	EXPECT_EQ(cpu.Read8(0x23), 0x00);
+	EXPECT_TRUE(P.Zero);
+	EXPECT_FALSE(P.Negative);
+
+	tmpPC = PC;
+	EXPECT_EQ(cpu.Execute(), 6);    // jsr jsr_test
+	EXPECT_EQ(PC, tmpPC + 6);
+	EXPECT_EQ(cpu.Execute(), 2);    // nop
+	EXPECT_EQ(cpu.Execute(), 6);    // rts
+	EXPECT_EQ(PC, tmpPC + 3);
+	EXPECT_EQ(cpu.Execute(), 3);    // jmp after_test
+	EXPECT_EQ(PC, tmpPC + 8);
+	EXPECT_EQ(cpu.Execute(), 2);    // nop
+
+	tmpPC = PC;
+	cpu.Write(0x66ff, 0xab);
+	cpu.Write(0x6600, 0xcd); // cdab
+	EXPECT_EQ(cpu.Execute(), 5);    // jmp ($ff66)
+	EXPECT_EQ(PC, 0xcdab);
+
+	PC = tmpPC + 3;
+
 }

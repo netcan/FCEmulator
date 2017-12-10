@@ -100,3 +100,32 @@ bcc_test:   nop
     cmp #$ff
     cpx #$ff
     cpy #$00
+
+    eor #$00
+
+    lda #$23
+    ldx $60,Y  ; ZeroPage Y addressing
+    ldy #$aa
+
+    ora #$ab
+
+    sbc #$ff
+
+    bit $66
+
+    sta $23
+    stx $23
+    sty $23
+
+    dec $23
+    inc $23
+
+    jsr jsr_test
+    jmp after_jsr
+jsr_test:
+    nop
+    rts
+after_jsr:
+    nop
+
+    jmp ($66ff)
