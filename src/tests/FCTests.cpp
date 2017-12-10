@@ -388,11 +388,10 @@ TEST(CPUTest, opTest) {
 
 	P = 0xcc;
 	EXPECT_EQ(cpu.Execute(), 3);    // php
-	EXPECT_EQ(cpu.Read8(0x1ff), P);
 	EXPECT_EQ(SP, 0xfe);
 
 	EXPECT_EQ(cpu.Execute(), 4);    // pla
-	EXPECT_EQ(A, 0xcc);
+	EXPECT_EQ(A, 0xdc);
 	EXPECT_EQ(SP, 0xff);
 	EXPECT_FALSE(P.Zero);
 	EXPECT_TRUE(P.Negative);

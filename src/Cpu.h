@@ -228,6 +228,30 @@ private:
 	OpExeFuncDecl(OP_INC); // INC - Increment Memory
 	OpExeFuncDecl(OP_JMP); // JMP - Jump
 	OpExeFuncDecl(OP_JSR); // JSR - Jump to Subroutine
+
+	// Undocumented op
+	OpExeFuncDecl(OP_KIL); // KIL
+	OpExeFuncDecl(OP_AAC); // AAC
+	OpExeFuncDecl(OP_ARR); // ARR
+	OpExeFuncDecl(OP_ASR); // ASR
+	OpExeFuncDecl(OP_ATX); // ATX
+	OpExeFuncDecl(OP_AXS); // AXS
+	OpExeFuncDecl(OP_DOP); // DOP
+	OpExeFuncDecl(OP_XAA); // XAA
+	OpExeFuncDecl(OP_AAX); // AAX
+	OpExeFuncDecl(OP_LAX); // LAX
+	OpExeFuncDecl(OP_DCP); // DCP
+	OpExeFuncDecl(OP_ISC); // ISC
+	OpExeFuncDecl(OP_RLA); // RLA
+	OpExeFuncDecl(OP_RRA); // RRA
+	OpExeFuncDecl(OP_SLO); // SLO
+	OpExeFuncDecl(OP_SRE); // SRE
+	OpExeFuncDecl(OP_AXA); // AXA
+	OpExeFuncDecl(OP_LAR); // LAR
+	OpExeFuncDecl(OP_TOP); // TOP
+	OpExeFuncDecl(OP_SXA); // SXA
+	OpExeFuncDecl(OP_SYA); // SYA
+	OpExeFuncDecl(OP_XAS); // XAS
 /****************  指令声明区End  ****************/
 
 
@@ -237,7 +261,7 @@ struct Operation { // 指令
 	using ExeFunc = uint8_t (*)(OpExeFuncArgs);
 	uint8_t code;
 	CPU::OpAddressingMode addressing_mode;
-	uint8_t bytes, cycles, extra_cycles;
+	uint8_t bytes, cycles;
 	ExeFunc exe; // 返回具体执行的cycles数目
 };
 

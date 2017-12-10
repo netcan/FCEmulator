@@ -1,7 +1,7 @@
 import requests
 from lxml.html import fromstring
 from collections import namedtuple
-import pyperclip
+import pyperclip,re
 import pandas as pd
 
 
@@ -45,6 +45,7 @@ def clean_inst_table(opDetailTable):
                                         ).str.replace('Absolute,Y', 'AbsoluteY'
                                         ).str.replace('\(Indirect,X\)', 'IndexIndirect'
                                         ).str.replace('\(Indirect\),Y', 'IndirectIndex')
+    df['cycles'] = df['cycles'].str.replace('-', '0');
 
     df['code'] = df['code'].str.replace('$', '0x')
     df.loc[df['cycles'].str.contains('\+1'), 'extraCycles'] = 1
@@ -59,10 +60,10 @@ def clean_inst_table(opDetailTable):
 def print_inst_table(df):
     prs = '{\n'
     for (_, row) in df.iterrows():
-        prs += '\t{{ {0}, OpAddressingMode::{1:>13}, {2}, {3}, {4}, CPU::OP_{5} }}, \n'.format(
+        prs += '\t{{ {0}, OpAddressingMode::{1:>13}, {2}, {3}, CPU::OP_{4} }}, \n'.format(
             row['code'], row['addressingMode'],
             row['bytes'], row['cycles'],
-            row['extraCycles'], row['name'])
+            row['name'])
     prs = prs[:-3] + '\n};\n'
     print(prs)
     pyperclip.copy(prs)
@@ -86,7 +87,7 @@ def print_op_exec_func_define(df):
           '/**************** 指令实现区Begin ****************/\n'
     for (_, row) in df_sorted.iterrows():
         d = row['description'].copy()
-        d[1:] = [d.replace('\r\n', '\n\t * ') for d in d[1:]]
+        d[1:] = [d.replace('\n', '\n\t * ') for d in d[1:]]
         if len(d) < 3:
             d.append('')
         else:
@@ -107,9 +108,34 @@ def print_op_exec_func_define(df):
     print(len(df_sorted))
     pyperclip.copy(prs)
 
+def undocumented_op_table():
+    txt = requests.get('http://nesdev.com/undocumented_opcodes.txt').text
+    opName = []
+    for m in re.finditer('(\w+) \(\w+\) \[\w+\]\s=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D\n', txt):
+        opName.append(m.group(1))
+
+    opDescription = []
+    for m in re.finditer('=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D\s(.*?)\n\n', txt, re.DOTALL):
+        opDescription.append(m.group(1))
+
+    opMap = dict(zip(opName, opDescription))
+    opTable = []
+    for m in re.finditer(
+            '(?P<addressingMode>[ \w()#$,]+)\s*\|(?P<name>\w+)\s.*?\|(?P<code>\$\w{2})\|\s(?P<bytes>\d)\s\|\s(?P<cycles>[\d-])',
+            txt):
+        d = m.groupdict()
+        d['description'] = [d['name'], opMap[d['name']]]
+        opTable.append(d)
+
+    return pd.DataFrame(opTable)
+
 
 if __name__ == '__main__':
-    df = clean_inst_table(get_inst_ref())
-    # print_inst_table(df)
-    # print_op_exec_func_decl(df)
-    print_op_exec_func_define(df)
+    op_df = clean_inst_table(get_inst_ref())
+    undoc_df = clean_inst_table(undocumented_op_table())
+    # print_inst_table(op_df)
+    print_inst_table(undoc_df)
+    # print_op_exec_func_decl(op_df)
+    # print_op_exec_func_decl(undoc_df)
+    # print_op_exec_func_define(op_df)
+    print_op_exec_func_define(undoc_df)
