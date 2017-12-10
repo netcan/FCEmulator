@@ -671,11 +671,12 @@ TEST(CPUTest, romTest) {
 		       &targetA, &targetX, &targetY, &targetP, &targetSP, &targetCYC
 		);
 		int CYC = cpu.getCycles() * 3 % 341;
-		sprintf(msg, "%s: %X(%X) %02X(%02X) A:%02X(%02X) X:%02X(%02X) Y:%02X(%02X) P:%02X(%02X) SP:%02X(%02X) CYC:%3d(%3d)\n",
-		        opCodeName, PC, targetPC, cpu.Read8(PC), targetOpcode,
+		sprintf(msg, "%s(%02X): %X(%X) %02X(%02X) A:%02X(%02X) X:%02X(%02X) Y:%02X(%02X) P:%02X(%02X) SP:%02X(%02X) CYC:%3d(%3d)\n",
+		        opCodeName, targetOpcode, PC, targetPC, cpu.Read8(PC), targetOpcode,
 		        A, targetA, X, targetX, Y, targetY, (uint8_t)P, targetP,
 		        SP, targetSP, CYC, targetCYC
 		);
+		ASSERT_EQ(PC, targetPC) << msg;
 		ASSERT_EQ(P, targetP) << msg;
 		ASSERT_EQ(A, targetA) << msg;
 		ASSERT_EQ(X, targetX) << msg;

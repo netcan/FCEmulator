@@ -17,3 +17,14 @@
 	- [https://en.wikibooks.org/wiki/6502_Assembly](https://en.wikibooks.org/wiki/6502_Assembly)
 
 - Overflow与Carry位：[http://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt](http://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt)
+- Undocumented opcodes: 
+	- [http://nesdev.com/undocumented_opcodes.txt](http://nesdev.com/undocumented_opcodes.txt)
+	- [http://nesdev.com/extra_instructions.txt](http://nesdev.com/extra_instructions.txt)
+
+## Bug
+- PLP的Brk位：
+	- [https://forums.nesdev.com/viewtopic.php?f=3&t=13343](https://forums.nesdev.com/viewtopic.php?f=3&t=13343)
+	- [http://visual6502.org/wiki/index.php?title=6502_BRK_and_B_bit](http://visual6502.org/wiki/index.php?title=6502_BRK_and_B_bit)
+
+- TXS的N位：Note that TXS (Transfer X to S) is not an arithmetic operation
+	- [https://nesdev.com/6502_cpu.txt](https://nesdev.com/6502_cpu.txt)

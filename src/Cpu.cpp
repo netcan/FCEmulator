@@ -173,116 +173,116 @@ const Operation ** CPU::InitOptable() {
 			{ 0x98, OpAddressingMode::     Implicit, 1, 2, CPU::OP_TYA },
 
 			// Undocumented op
-			{ 0x0B, OpAddressingMode:: Immediate   , 2, 2, CPU::OP_AAC },
-			{ 0x2B, OpAddressingMode:: Immediate   , 2, 2, CPU::OP_AAC },
-			{ 0x87, OpAddressingMode::  ZeroPage   , 2, 3, CPU::OP_AAX },
-			{ 0x97, OpAddressingMode::   ZeroPageY , 2, 4, CPU::OP_AAX },
+			{ 0x0B, OpAddressingMode::    Immediate, 2, 2, CPU::OP_AAC },
+			{ 0x2B, OpAddressingMode::    Immediate, 2, 2, CPU::OP_AAC },
+			{ 0x87, OpAddressingMode::     ZeroPage, 2, 3, CPU::OP_AAX },
+			{ 0x97, OpAddressingMode::    ZeroPageY, 2, 4, CPU::OP_AAX },
 			{ 0x83, OpAddressingMode::IndexIndirect, 2, 6, CPU::OP_AAX },
-			{ 0x8F, OpAddressingMode:: Absolute    , 3, 4, CPU::OP_AAX },
-			{ 0x6B, OpAddressingMode:: Immediate   , 2, 2, CPU::OP_ARR },
-			{ 0x4B, OpAddressingMode:: Immediate   , 2, 2, CPU::OP_ASR },
-			{ 0xAB, OpAddressingMode:: Immediate   , 2, 2, CPU::OP_ATX },
-			{ 0x9F, OpAddressingMode::  AbsoluteY  , 3, 5, CPU::OP_AXA },
+			{ 0x8F, OpAddressingMode::     Absolute, 3, 4, CPU::OP_AAX },
+			{ 0x6B, OpAddressingMode::    Immediate, 2, 2, CPU::OP_ARR },
+			{ 0x4B, OpAddressingMode::    Immediate, 2, 2, CPU::OP_ASR },
+			{ 0xAB, OpAddressingMode::    Immediate, 2, 2, CPU::OP_ATX },
+			{ 0x9F, OpAddressingMode::    AbsoluteY, 3, 5, CPU::OP_AXA },
 			{ 0x93, OpAddressingMode::IndirectIndex, 2, 6, CPU::OP_AXA },
-			{ 0xCB, OpAddressingMode:: Immediate   , 2, 2, CPU::OP_AXS },
-			{ 0xC7, OpAddressingMode::  ZeroPage   , 2, 5, CPU::OP_DCP },
-			{ 0xD7, OpAddressingMode::   ZeroPageX , 2, 6, CPU::OP_DCP },
-			{ 0xCF, OpAddressingMode:: Absolute    , 3, 6, CPU::OP_DCP },
-			{ 0xDF, OpAddressingMode::  AbsoluteX  , 3, 7, CPU::OP_DCP },
-			{ 0xDB, OpAddressingMode::  AbsoluteY  , 3, 7, CPU::OP_DCP },
+			{ 0xCB, OpAddressingMode::    Immediate, 2, 2, CPU::OP_AXS },
+			{ 0xC7, OpAddressingMode::     ZeroPage, 2, 5, CPU::OP_DCP },
+			{ 0xD7, OpAddressingMode::    ZeroPageX, 2, 6, CPU::OP_DCP },
+			{ 0xCF, OpAddressingMode::     Absolute, 3, 6, CPU::OP_DCP },
+			{ 0xDF, OpAddressingMode::    AbsoluteX, 3, 7, CPU::OP_DCP },
+			{ 0xDB, OpAddressingMode::    AbsoluteY, 3, 7, CPU::OP_DCP },
 			{ 0xC3, OpAddressingMode::IndexIndirect, 2, 8, CPU::OP_DCP },
 			{ 0xD3, OpAddressingMode::IndirectIndex, 2, 8, CPU::OP_DCP },
-			{ 0x04, OpAddressingMode::  ZeroPage   , 2, 3, CPU::OP_DOP },
-			{ 0x14, OpAddressingMode::   ZeroPageX , 2, 4, CPU::OP_DOP },
-			{ 0x34, OpAddressingMode::   ZeroPageX , 2, 4, CPU::OP_DOP },
-			{ 0x44, OpAddressingMode::  ZeroPage   , 2, 3, CPU::OP_DOP },
-			{ 0x54, OpAddressingMode::   ZeroPageX , 2, 4, CPU::OP_DOP },
-			{ 0x64, OpAddressingMode::  ZeroPage   , 2, 3, CPU::OP_DOP },
-			{ 0x74, OpAddressingMode::   ZeroPageX , 2, 4, CPU::OP_DOP },
-			{ 0x80, OpAddressingMode:: Immediate   , 2, 2, CPU::OP_DOP },
-			{ 0x82, OpAddressingMode:: Immediate   , 2, 2, CPU::OP_DOP },
-			{ 0x89, OpAddressingMode:: Immediate   , 2, 2, CPU::OP_DOP },
-			{ 0xC2, OpAddressingMode:: Immediate   , 2, 2, CPU::OP_DOP },
-			{ 0xD4, OpAddressingMode::   ZeroPageX , 2, 4, CPU::OP_DOP },
-			{ 0xE2, OpAddressingMode:: Immediate   , 2, 2, CPU::OP_DOP },
-			{ 0xF4, OpAddressingMode::   ZeroPageX , 2, 4, CPU::OP_DOP },
-			{ 0xE7, OpAddressingMode::  ZeroPage   , 2, 5, CPU::OP_ISC },
-			{ 0xF7, OpAddressingMode::   ZeroPageX , 2, 6, CPU::OP_ISC },
-			{ 0xEF, OpAddressingMode:: Absolute    , 3, 6, CPU::OP_ISC },
-			{ 0xFF, OpAddressingMode::  AbsoluteX  , 3, 7, CPU::OP_ISC },
-			{ 0xFB, OpAddressingMode::  AbsoluteY  , 3, 7, CPU::OP_ISC },
+			{ 0x04, OpAddressingMode::     ZeroPage, 2, 3, CPU::OP_DOP },
+			{ 0x14, OpAddressingMode::    ZeroPageX, 2, 4, CPU::OP_DOP },
+			{ 0x34, OpAddressingMode::    ZeroPageX, 2, 4, CPU::OP_DOP },
+			{ 0x44, OpAddressingMode::     ZeroPage, 2, 3, CPU::OP_DOP },
+			{ 0x54, OpAddressingMode::    ZeroPageX, 2, 4, CPU::OP_DOP },
+			{ 0x64, OpAddressingMode::     ZeroPage, 2, 3, CPU::OP_DOP },
+			{ 0x74, OpAddressingMode::    ZeroPageX, 2, 4, CPU::OP_DOP },
+			{ 0x80, OpAddressingMode::    Immediate, 2, 2, CPU::OP_DOP },
+			{ 0x82, OpAddressingMode::    Immediate, 2, 2, CPU::OP_DOP },
+			{ 0x89, OpAddressingMode::    Immediate, 2, 2, CPU::OP_DOP },
+			{ 0xC2, OpAddressingMode::    Immediate, 2, 2, CPU::OP_DOP },
+			{ 0xD4, OpAddressingMode::    ZeroPageX, 2, 4, CPU::OP_DOP },
+			{ 0xE2, OpAddressingMode::    Immediate, 2, 2, CPU::OP_DOP },
+			{ 0xF4, OpAddressingMode::    ZeroPageX, 2, 4, CPU::OP_DOP },
+			{ 0xE7, OpAddressingMode::     ZeroPage, 2, 5, CPU::OP_ISC },
+			{ 0xF7, OpAddressingMode::    ZeroPageX, 2, 6, CPU::OP_ISC },
+			{ 0xEF, OpAddressingMode::     Absolute, 3, 6, CPU::OP_ISC },
+			{ 0xFF, OpAddressingMode::    AbsoluteX, 3, 7, CPU::OP_ISC },
+			{ 0xFB, OpAddressingMode::    AbsoluteY, 3, 7, CPU::OP_ISC },
 			{ 0xE3, OpAddressingMode::IndexIndirect, 2, 8, CPU::OP_ISC },
 			{ 0xF3, OpAddressingMode::IndirectIndex, 2, 8, CPU::OP_ISC },
-			{ 0x02, OpAddressingMode::Implicit     , 1, 0, CPU::OP_KIL },
-			{ 0x12, OpAddressingMode::Implicit     , 1, 0, CPU::OP_KIL },
-			{ 0x22, OpAddressingMode::Implicit     , 1, 0, CPU::OP_KIL },
-			{ 0x32, OpAddressingMode::Implicit     , 1, 0, CPU::OP_KIL },
-			{ 0x42, OpAddressingMode::Implicit     , 1, 0, CPU::OP_KIL },
-			{ 0x52, OpAddressingMode::Implicit     , 1, 0, CPU::OP_KIL },
-			{ 0x62, OpAddressingMode::Implicit     , 1, 0, CPU::OP_KIL },
-			{ 0x72, OpAddressingMode::Implicit     , 1, 0, CPU::OP_KIL },
-			{ 0x92, OpAddressingMode::Implicit     , 1, 0, CPU::OP_KIL },
-			{ 0xB2, OpAddressingMode::Implicit     , 1, 0, CPU::OP_KIL },
-			{ 0xD2, OpAddressingMode::Implicit     , 1, 0, CPU::OP_KIL },
-			{ 0xF2, OpAddressingMode::Implicit     , 1, 0, CPU::OP_KIL },
-			{ 0xBB, OpAddressingMode::  AbsoluteY  , 3, 4, CPU::OP_LAR },
-			{ 0xA7, OpAddressingMode::  ZeroPage   , 2, 3, CPU::OP_LAX },
-			{ 0xB7, OpAddressingMode::   ZeroPageY , 2, 4, CPU::OP_LAX },
-			{ 0xAF, OpAddressingMode:: Absolute    , 3, 4, CPU::OP_LAX },
-			{ 0xBF, OpAddressingMode::  AbsoluteY  , 3, 4, CPU::OP_LAX },
+			{ 0x02, OpAddressingMode::     Implicit, 1, 0, CPU::OP_KIL },
+			{ 0x12, OpAddressingMode::     Implicit, 1, 0, CPU::OP_KIL },
+			{ 0x22, OpAddressingMode::     Implicit, 1, 0, CPU::OP_KIL },
+			{ 0x32, OpAddressingMode::     Implicit, 1, 0, CPU::OP_KIL },
+			{ 0x42, OpAddressingMode::     Implicit, 1, 0, CPU::OP_KIL },
+			{ 0x52, OpAddressingMode::     Implicit, 1, 0, CPU::OP_KIL },
+			{ 0x62, OpAddressingMode::     Implicit, 1, 0, CPU::OP_KIL },
+			{ 0x72, OpAddressingMode::     Implicit, 1, 0, CPU::OP_KIL },
+			{ 0x92, OpAddressingMode::     Implicit, 1, 0, CPU::OP_KIL },
+			{ 0xB2, OpAddressingMode::     Implicit, 1, 0, CPU::OP_KIL },
+			{ 0xD2, OpAddressingMode::     Implicit, 1, 0, CPU::OP_KIL },
+			{ 0xF2, OpAddressingMode::     Implicit, 1, 0, CPU::OP_KIL },
+			{ 0xBB, OpAddressingMode::    AbsoluteY, 3, 4, CPU::OP_LAR },
+			{ 0xA7, OpAddressingMode::     ZeroPage, 2, 3, CPU::OP_LAX },
+			{ 0xB7, OpAddressingMode::    ZeroPageY, 2, 4, CPU::OP_LAX },
+			{ 0xAF, OpAddressingMode::     Absolute, 3, 4, CPU::OP_LAX },
+			{ 0xBF, OpAddressingMode::    AbsoluteY, 3, 4, CPU::OP_LAX },
 			{ 0xA3, OpAddressingMode::IndexIndirect, 2, 6, CPU::OP_LAX },
 			{ 0xB3, OpAddressingMode::IndirectIndex, 2, 5, CPU::OP_LAX },
-			{ 0x1A, OpAddressingMode::Implicit     , 1, 2, CPU::OP_NOP },
-			{ 0x3A, OpAddressingMode::Implicit     , 1, 2, CPU::OP_NOP },
-			{ 0x5A, OpAddressingMode::Implicit     , 1, 2, CPU::OP_NOP },
-			{ 0x7A, OpAddressingMode::Implicit     , 1, 2, CPU::OP_NOP },
-			{ 0xDA, OpAddressingMode::Implicit     , 1, 2, CPU::OP_NOP },
-			{ 0xFA, OpAddressingMode::Implicit     , 1, 2, CPU::OP_NOP },
-			{ 0x27, OpAddressingMode::  ZeroPage   , 2, 5, CPU::OP_RLA },
-			{ 0x37, OpAddressingMode::   ZeroPageX , 2, 6, CPU::OP_RLA },
-			{ 0x2F, OpAddressingMode:: Absolute    , 3, 6, CPU::OP_RLA },
-			{ 0x3F, OpAddressingMode::  AbsoluteX  , 3, 7, CPU::OP_RLA },
-			{ 0x3B, OpAddressingMode::  AbsoluteY  , 3, 7, CPU::OP_RLA },
+			{ 0x1A, OpAddressingMode::     Implicit, 1, 2, CPU::OP_NOP },
+			{ 0x3A, OpAddressingMode::     Implicit, 1, 2, CPU::OP_NOP },
+			{ 0x5A, OpAddressingMode::     Implicit, 1, 2, CPU::OP_NOP },
+			{ 0x7A, OpAddressingMode::     Implicit, 1, 2, CPU::OP_NOP },
+			{ 0xDA, OpAddressingMode::     Implicit, 1, 2, CPU::OP_NOP },
+			{ 0xFA, OpAddressingMode::     Implicit, 1, 2, CPU::OP_NOP },
+			{ 0x27, OpAddressingMode::     ZeroPage, 2, 5, CPU::OP_RLA },
+			{ 0x37, OpAddressingMode::    ZeroPageX, 2, 6, CPU::OP_RLA },
+			{ 0x2F, OpAddressingMode::     Absolute, 3, 6, CPU::OP_RLA },
+			{ 0x3F, OpAddressingMode::    AbsoluteX, 3, 7, CPU::OP_RLA },
+			{ 0x3B, OpAddressingMode::    AbsoluteY, 3, 7, CPU::OP_RLA },
 			{ 0x23, OpAddressingMode::IndexIndirect, 2, 8, CPU::OP_RLA },
 			{ 0x33, OpAddressingMode::IndirectIndex, 2, 8, CPU::OP_RLA },
-			{ 0x67, OpAddressingMode::  ZeroPage   , 2, 5, CPU::OP_RRA },
-			{ 0x77, OpAddressingMode::   ZeroPageX , 2, 6, CPU::OP_RRA },
-			{ 0x6F, OpAddressingMode:: Absolute    , 3, 6, CPU::OP_RRA },
-			{ 0x7F, OpAddressingMode::  AbsoluteX  , 3, 7, CPU::OP_RRA },
-			{ 0x7B, OpAddressingMode::  AbsoluteY  , 3, 7, CPU::OP_RRA },
+			{ 0x67, OpAddressingMode::     ZeroPage, 2, 5, CPU::OP_RRA },
+			{ 0x77, OpAddressingMode::    ZeroPageX, 2, 6, CPU::OP_RRA },
+			{ 0x6F, OpAddressingMode::     Absolute, 3, 6, CPU::OP_RRA },
+			{ 0x7F, OpAddressingMode::    AbsoluteX, 3, 7, CPU::OP_RRA },
+			{ 0x7B, OpAddressingMode::    AbsoluteY, 3, 7, CPU::OP_RRA },
 			{ 0x63, OpAddressingMode::IndexIndirect, 2, 8, CPU::OP_RRA },
 			{ 0x73, OpAddressingMode::IndirectIndex, 2, 8, CPU::OP_RRA },
-			{ 0xEB, OpAddressingMode:: Immediate   , 2, 2, CPU::OP_SBC },
-			{ 0x07, OpAddressingMode::  ZeroPage   , 2, 5, CPU::OP_SLO },
-			{ 0x17, OpAddressingMode::   ZeroPageX , 2, 6, CPU::OP_SLO },
-			{ 0x0F, OpAddressingMode:: Absolute    , 3, 6, CPU::OP_SLO },
-			{ 0x1F, OpAddressingMode::  AbsoluteX  , 3, 7, CPU::OP_SLO },
-			{ 0x1B, OpAddressingMode::  AbsoluteY  , 3, 7, CPU::OP_SLO },
+			{ 0xEB, OpAddressingMode::    Immediate, 2, 2, CPU::OP_SBC },
+			{ 0x07, OpAddressingMode::     ZeroPage, 2, 5, CPU::OP_SLO },
+			{ 0x17, OpAddressingMode::    ZeroPageX, 2, 6, CPU::OP_SLO },
+			{ 0x0F, OpAddressingMode::     Absolute, 3, 6, CPU::OP_SLO },
+			{ 0x1F, OpAddressingMode::    AbsoluteX, 3, 7, CPU::OP_SLO },
+			{ 0x1B, OpAddressingMode::    AbsoluteY, 3, 7, CPU::OP_SLO },
 			{ 0x03, OpAddressingMode::IndexIndirect, 2, 8, CPU::OP_SLO },
 			{ 0x13, OpAddressingMode::IndirectIndex, 2, 8, CPU::OP_SLO },
-			{ 0x47, OpAddressingMode::  ZeroPage   , 2, 5, CPU::OP_SRE },
-			{ 0x57, OpAddressingMode::   ZeroPageX , 2, 6, CPU::OP_SRE },
-			{ 0x4F, OpAddressingMode:: Absolute    , 3, 6, CPU::OP_SRE },
-			{ 0x5F, OpAddressingMode::  AbsoluteX  , 3, 7, CPU::OP_SRE },
-			{ 0x5B, OpAddressingMode::  AbsoluteY  , 3, 7, CPU::OP_SRE },
+			{ 0x47, OpAddressingMode::     ZeroPage, 2, 5, CPU::OP_SRE },
+			{ 0x57, OpAddressingMode::    ZeroPageX, 2, 6, CPU::OP_SRE },
+			{ 0x4F, OpAddressingMode::     Absolute, 3, 6, CPU::OP_SRE },
+			{ 0x5F, OpAddressingMode::    AbsoluteX, 3, 7, CPU::OP_SRE },
+			{ 0x5B, OpAddressingMode::    AbsoluteY, 3, 7, CPU::OP_SRE },
 			{ 0x43, OpAddressingMode::IndexIndirect, 2, 8, CPU::OP_SRE },
 			{ 0x53, OpAddressingMode::IndirectIndex, 2, 8, CPU::OP_SRE },
-			{ 0x9E, OpAddressingMode::  AbsoluteY  , 3, 5, CPU::OP_SXA },
-			{ 0x9C, OpAddressingMode::  AbsoluteX  , 3, 5, CPU::OP_SYA },
-			{ 0x0C, OpAddressingMode:: Absolute    , 3, 4, CPU::OP_TOP },
-			{ 0x1C, OpAddressingMode::  AbsoluteX  , 3, 4, CPU::OP_TOP },
-			{ 0x3C, OpAddressingMode::  AbsoluteX  , 3, 4, CPU::OP_TOP },
-			{ 0x5C, OpAddressingMode::  AbsoluteX  , 3, 4, CPU::OP_TOP },
-			{ 0x7C, OpAddressingMode::  AbsoluteX  , 3, 4, CPU::OP_TOP },
-			{ 0xDC, OpAddressingMode::  AbsoluteX  , 3, 4, CPU::OP_TOP },
-			{ 0xFC, OpAddressingMode::  AbsoluteX  , 3, 4, CPU::OP_TOP },
-			{ 0x8B, OpAddressingMode:: Immediate   , 2, 2, CPU::OP_XAA },
-			{ 0x9B, OpAddressingMode::  AbsoluteY  , 3, 5, CPU::OP_XAS }
+			{ 0x9E, OpAddressingMode::    AbsoluteY, 3, 5, CPU::OP_SXA },
+			{ 0x9C, OpAddressingMode::    AbsoluteX, 3, 5, CPU::OP_SYA },
+			{ 0x0C, OpAddressingMode::     Absolute, 3, 4, CPU::OP_TOP },
+			{ 0x1C, OpAddressingMode::    AbsoluteX, 3, 4, CPU::OP_TOP },
+			{ 0x3C, OpAddressingMode::    AbsoluteX, 3, 4, CPU::OP_TOP },
+			{ 0x5C, OpAddressingMode::    AbsoluteX, 3, 4, CPU::OP_TOP },
+			{ 0x7C, OpAddressingMode::    AbsoluteX, 3, 4, CPU::OP_TOP },
+			{ 0xDC, OpAddressingMode::    AbsoluteX, 3, 4, CPU::OP_TOP },
+			{ 0xFC, OpAddressingMode::    AbsoluteX, 3, 4, CPU::OP_TOP },
+			{ 0x8B, OpAddressingMode::    Immediate, 2, 2, CPU::OP_XAA },
+			{ 0x9B, OpAddressingMode::    AbsoluteY, 3, 5, CPU::OP_XAS }
 	};
 
 
 	static_assert(LEN(op_entity) == 256, "instruction count should be 256.");
-	static const Operation *optable[0xff];
+	static const Operation *optable[0xff + 1];
 	for(const auto & op: op_entity) {
 		assert(optable[op.code] == nullptr);
 		optable[op.code] = &op;
@@ -388,15 +388,21 @@ uint8_t CPU::Execute() {
 /**************** 指令实现区Begin ****************/
 #define MorA (operand ? *operand:cpu->A)
 #define Branch(field, value)    if (cpu->P.field == value) { \
+									if( ( (updated_pc) & 0xff00) != ( (updated_pc + (int8_t)*operand) & 0xff00) ) crossed_page = true; \
 									updated_pc += (int8_t) *operand; \
 									return uint8_t(self.cycles + crossed_page + 1); \
 								} \
-								return self.cycles + crossed_page;
+								return self.cycles;
 #define FixCycle self.cycles + crossed_page;
 #define OpRM(R, op) cpu->R op *operand; \
 					cpu->P.Negative = Sign(cpu->R); \
 					cpu->P.Zero = cpu->R == 0; \
 					return FixCycle;
+
+#define OpRMProc(R, op) cpu->R op *operand; \
+						cpu->P.Negative = Sign(cpu->R); \
+						cpu->P.Zero = cpu->R == 0;
+
 #define TRNS(T,F)   T = F; \
 					cpu->P.Negative = Sign(T); \
 					cpu->P.Zero = T == 0; \
@@ -1133,7 +1139,7 @@ OpExeFuncDefine(OP_JSR) {
 	return self.cycles;
 }
 
-// Undocumented OP
+//************************************* Undocumented OP
 OpExeFuncDefine(OP_KIL) {
 	// TODO: wait for implements: KIL
 	/**
@@ -1230,88 +1236,123 @@ OpExeFuncDefine(OP_XAA) {
 }
 
 OpExeFuncDefine(OP_AAX) {
-	// TODO: wait for implements: AAX
 	/**
 	 * AAX
 	 * AND X register with accumulator and store result in memory. Status
 	 * flags: N,Z
 	 **/
-
+	/* http://nesdev.com/extra_instructions.txt
+	 * (SAX) AXS ANDs the contents of the A and X registers (without changing the contents of either register)
+	 * and stores the result in memory. AXS does not affect any flags in the processor status register.
+	 */
+	*operand = cpu->X & cpu->A;
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_LAX) {
-	// TODO: wait for implements: LAX
 	/**
 	 * LAX
 	 * Load accumulator and X register with memory.
 	 * Status flags: N,Z
 	 **/
 
-	return self.cycles;
+	cpu->A = *operand;
+	OpRM(X, =);
 }
 
 OpExeFuncDefine(OP_DCP) {
-	// TODO: wait for implements: DCP
 	/**
 	 * DCP
 	 * Subtract 1 from memory (without borrow).
-	 * Status flags: C
+	 * Status flags: C,Z,N
 	 **/
+	--*operand;
+	cpu->P.Carry = cpu->A >= *operand;
+	cpu->P.Zero = cpu->A == *operand;
+	cpu->P.Negative = Sign(cpu->A - *operand);
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_ISC) {
-	// TODO: wait for implements: ISC
 	/**
 	 * ISC
 	 * Increase memory by one, then subtract memory from accu-mulator (with
 	 * borrow). Status flags: N,V,Z,C
 	 **/
+	++*operand;
+
+	auto tmpOperand = uint8_t(~*operand); // 将tmpOperand取-(*operand+1)
+	uint16_t result = uint16_t(cpu->A) + uint16_t(tmpOperand) + cpu->P.Carry;
+	cpu->P.Overflow = GetBit(result, 0x8) ^
+	                  GetBit( (cpu->A & uint8_t(0x7f)) + (tmpOperand & uint8_t(0x7f)) + cpu->P.Carry, 0x7); // for signed number
+	cpu->P.Carry = GetBit(result,  0x8); // for usigned number
+	cpu->P.Zero = (result & 0xff) == 0;
+	cpu->P.Negative = Sign(uint8_t(result));
+	cpu->A = uint8_t(result);
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_RLA) {
-	// TODO: wait for implements: RLA
 	/**
 	 * RLA
 	 * Rotate one bit left in memory, then AND accumulator with memory. Status
 	 * flags: N,Z,C
 	 **/
+	auto result = uint8_t(*operand << 1) | cpu->P.Carry;
+	cpu->P.Carry = GetBit(*operand, 0x7);
+	*operand = result;
+	OpRMProc(A, &=);
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_RRA) {
-	// TODO: wait for implements: RRA
 	/**
 	 * RRA
 	 * Rotate one bit right in memory, then add memory to accumulator (with
 	 * carry).
 	 **/
+	uint16_t result = uint8_t(*operand >> 1) | (cpu->P.Carry) << 0x7;
+	cpu->P.Carry = GetBit(*operand, 0);
+	*operand = result;
+
+	result = uint16_t(cpu->A) + uint16_t(*operand) + cpu->P.Carry;
+	cpu->P.Overflow = GetBit(result, 0x8) ^
+	                  GetBit( (cpu->A & uint8_t(0x7f)) + (*operand & uint8_t(0x7f)) + cpu->P.Carry, 0x7); // for signed number
+	cpu->P.Carry = GetBit(result, 0x8); // for usigned number
+	cpu->P.Zero = (result & 0xff) == 0;
+	cpu->P.Negative = Sign(uint8_t(result));
+
+	cpu->A = uint8_t(result);
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_SLO) {
-	// TODO: wait for implements: SLO
 	/**
 	 * SLO
 	 * Shift left one bit in memory, then OR accumulator with memory. =
+	 * A,Z,C,N
 	 **/
+	cpu->P.Carry = Sign(*operand);
+	*operand <<= 1;
+	OpRMProc(A, |=);
 
 	return self.cycles;
 }
 
 OpExeFuncDefine(OP_SRE) {
-	// TODO: wait for implements: SRE
 	/**
 	 * SRE
 	 * Shift right one bit in memory, then EOR accumulator with memory. Status
 	 * flags: N,Z,C
 	 **/
+	auto result = uint8_t(*operand >> 1);
+	cpu->P.Carry = GetBit(*operand, 0x0);
+	*operand = result;
+	OpRMProc(A, ^=);
 
 	return self.cycles;
 }
@@ -1340,14 +1381,13 @@ OpExeFuncDefine(OP_LAR) {
 }
 
 OpExeFuncDefine(OP_TOP) {
-	// TODO: wait for implements: TOP
 	/**
 	 * TOP
 	 * No operation (tripple NOP). The argument has no signifi-cance. Status
 	 * flags: -
 	 **/
 
-	return self.cycles;
+	return FixCycle;
 }
 
 OpExeFuncDefine(OP_SXA) {

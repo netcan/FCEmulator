@@ -108,15 +108,15 @@ def print_op_exec_func_define(df):
     print(len(df_sorted))
     pyperclip.copy(prs)
 
-def undocumented_op_table():
+def get_undoc_op_table():
     txt = requests.get('http://nesdev.com/undocumented_opcodes.txt').text
     opName = []
     for m in re.finditer('(\w+) \(\w+\) \[\w+\]\s=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D\n', txt):
-        opName.append(m.group(1))
+        opName.append(m.group(1).strip())
 
     opDescription = []
     for m in re.finditer('=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D\s(.*?)\n\n', txt, re.DOTALL):
-        opDescription.append(m.group(1))
+        opDescription.append(m.group(1).strip())
 
     opMap = dict(zip(opName, opDescription))
     opTable = []
@@ -124,6 +124,7 @@ def undocumented_op_table():
             '(?P<addressingMode>[ \w()#$,]+)\s*\|(?P<name>\w+)\s.*?\|(?P<code>\$\w{2})\|\s(?P<bytes>\d)\s\|\s(?P<cycles>[\d-])',
             txt):
         d = m.groupdict()
+        d['addressingMode'] = d['addressingMode'].strip()
         d['description'] = [d['name'], opMap[d['name']]]
         opTable.append(d)
 
@@ -132,10 +133,10 @@ def undocumented_op_table():
 
 if __name__ == '__main__':
     op_df = clean_inst_table(get_inst_ref())
-    undoc_df = clean_inst_table(undocumented_op_table())
+    undoc_df = clean_inst_table(get_undoc_op_table())
     # print_inst_table(op_df)
     print_inst_table(undoc_df)
     # print_op_exec_func_decl(op_df)
     # print_op_exec_func_decl(undoc_df)
     # print_op_exec_func_define(op_df)
-    print_op_exec_func_define(undoc_df)
+    # print_op_exec_func_define(undoc_df)
