@@ -66,21 +66,21 @@ private:
 	uint8_t LowerPRGRom[0x4000]; // 0x8000-0xbfff
 	uint8_t UpperPRGRom[0x4000]; // 0xc000-0xffff
 
-inline const uint8_t &AT(uint16_t addr) const {
-		return (addr < 0x2000 ? Ram[addr & 0x7ff]:                  \
-				addr < 0x4000 ? PPURegister[(addr - 0x2000) & 0x7]: \
-				addr < 0x4020 ? APUIORegister[(addr - 0x4000)]:     \
-				addr < 0x6000 ? ExpansionRom[addr - 0x4020]:        \
-				addr < 0x8000 ? SRam[addr - 0x6000]:                \
-				addr < 0xc000 ? LowerPRGRom[addr - 0x8000]:         \
-				UpperPRGRom[addr - 0xc000]);
-}
+	inline const uint8_t &AT(uint16_t addr) const {
+			return  addr < 0x2000 ? Ram[addr & 0x7ff]:
+					addr < 0x4000 ? PPURegister[addr & 0x7]:
+					addr < 0x4020 ? APUIORegister[(addr - 0x4000)]:
+					addr < 0x6000 ? ExpansionRom[addr - 0x4020]:
+					addr < 0x8000 ? SRam[addr - 0x6000]:
+					addr < 0xc000 ? LowerPRGRom[addr - 0x8000]:
+									UpperPRGRom[addr - 0xc000];
+	}
 
-inline uint8_t &AT(uint16_t addr) {
-	return const_cast<uint8_t &>(
-			static_cast<const __CPUMem__&>(*this).AT(addr)
-	);
-}
+	inline uint8_t &AT(uint16_t addr) { // 复用const版本
+		return const_cast<uint8_t &>(
+				static_cast<const __CPUMem__&>(*this).AT(addr)
+		);
+	}
 
 public:
 	uint8_t &operator[](uint16_t addr) { return AT(addr); }

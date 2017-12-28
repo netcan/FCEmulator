@@ -10,6 +10,7 @@
 #define FCEMU_FAMICOM_H
 #include "Base.h"
 #include "Cpu.h"
+#include "Ppu.h"
 #include "Cartridge.h"
 
 class Famicom {
@@ -20,6 +21,7 @@ public:
 	}
 
 private:
+	PPU ppu;
 	CPU cpu;
 	Cartridge cart;
 
