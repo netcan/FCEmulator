@@ -55,6 +55,7 @@ private:
 	uint8_t P;
 };
 
+
 class __CPUMem__ {
 private:
 	uint8_t Ram[0x800]; // 0x0000-0x07ff
@@ -65,50 +66,29 @@ private:
 	uint8_t LowerPRGRom[0x4000]; // 0x8000-0xbfff
 	uint8_t UpperPRGRom[0x4000]; // 0xc000-0xffff
 
-#define AT(addr) (addr < 0x2000 ? Ram[addr & 0x7ff]:        \
-		addr < 0x4000 ? PPURegister[(addr - 0x2000) & 0x7]: \
-		addr < 0x4020 ? APUIORegister[(addr - 0x4000)]:     \
-		addr < 0x6000 ? ExpansionRom[addr - 0x4020]:        \
-		addr < 0x8000 ? SRam[addr - 0x6000]:                \
-		addr < 0xc000 ? LowerPRGRom[addr - 0x8000]:         \
-		UpperPRGRom[addr - 0xc000]);
+inline const uint8_t &AT(uint16_t addr) const {
+		return (addr < 0x2000 ? Ram[addr & 0x7ff]:                  \
+				addr < 0x4000 ? PPURegister[(addr - 0x2000) & 0x7]: \
+				addr < 0x4020 ? APUIORegister[(addr - 0x4000)]:     \
+				addr < 0x6000 ? ExpansionRom[addr - 0x4020]:        \
+				addr < 0x8000 ? SRam[addr - 0x6000]:                \
+				addr < 0xc000 ? LowerPRGRom[addr - 0x8000]:         \
+				UpperPRGRom[addr - 0xc000]);
+}
+
+inline uint8_t &AT(uint16_t addr) {
+	return const_cast<uint8_t &>(
+			static_cast<const __CPUMem__&>(*this).AT(addr)
+	);
+}
 
 public:
-	class iterator: public std::iterator // 内部用32位来表示地址，是因为16位不好判断end()
-			<std::random_access_iterator_tag, uint8_t, ptrdiff_t, uint32_t, uint8_t &> {
-	public:
-		iterator(): parent(NULL), addr(0) {}
-		iterator(__CPUMem__ *parent, pointer addr): parent(parent), addr(addr) {}
-
-		reference operator*() { return parent->operator[](addr); }
-		uint8_t * get_raw_pointer() { return &parent->operator[](addr); }
-
-		iterator& operator++() { ++addr; return *this; } // ++it
-		iterator& operator--() { --addr; return *this; } // --it
-
-		iterator& operator+=(const uint16_t value) { this->addr += value; return *this; }
-		iterator& operator-=(const uint16_t value) { this->addr -= value; return *this; }
-		friend iterator operator+(iterator lhs, const uint16_t& rhs) { lhs += rhs; return lhs; }
-		friend iterator operator-(iterator lhs, const uint16_t& rhs) { lhs -= rhs; return lhs; }
-
-		friend bool operator==(const iterator &lhs, const iterator &rhs) { return lhs.addr == rhs.addr; }
-		friend bool operator!=(const iterator& lhs, const iterator& rhs) { return !(lhs == rhs); }
-		friend bool operator<(const iterator &lhs, const iterator &rhs) { return lhs.addr < rhs.addr; }
-
-		friend difference_type operator-(const iterator &lhs, const iterator &rhs) { return lhs.addr - rhs.addr; }
-
-		uint8_t &operator[](uint16_t value) { return parent->operator[](addr + value); }
-		const uint8_t &operator[](uint16_t value) const { return parent->operator[](addr + value); }
-	private:
-		pointer addr;
-		__CPUMem__ *parent;
-	};
-
-	iterator begin() { return iterator(this, 0); }
-	iterator end() { return iterator(this, 0x10000); }
-
 	uint8_t &operator[](uint16_t addr) { return AT(addr); }
 	const uint8_t &operator[](uint16_t addr) const { return AT(addr); }
+
+	using iterator = MemIterator<__CPUMem__>;
+	iterator begin() { return iterator(this, 0); }
+	iterator end() { return iterator(this, 0x10000); }
 };
 
 struct Operation;

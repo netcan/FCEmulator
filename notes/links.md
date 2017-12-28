@@ -6,6 +6,9 @@
 - 启动状态：[http://wiki.nesdev.com/w/index.php/CPU_power_up_state](http://wiki.nesdev.com/w/index.php/CPU_power_up_state)
 - 指令细节：[https://nesdev.com/6502_cpu.txt](https://nesdev.com/6502_cpu.txt)
 
+## PPU
+- 手册：[https://wiki.nesdev.com/w/index.php/PPU_programmer_reference](https://wiki.nesdev.com/w/index.php/PPU_programmer_reference)
+
 ## Developing
 - gtest框架：[https://github.com/google/googletest/blob/master/googletest/docs/Primer.md](https://github.com/google/googletest/blob/master/googletest/docs/Primer.md)
 - Nes测试rom：[http://www.qmtpro.com/~nes/misc/nestest.txt](http://www.qmtpro.com/~nes/misc/nestest.txt)
@@ -17,9 +20,11 @@
 	- [https://en.wikibooks.org/wiki/6502_Assembly](https://en.wikibooks.org/wiki/6502_Assembly)
 
 - Overflow与Carry位：[http://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt](http://teaching.idallen.com/dat2343/10f/notes/040_overflow.txt)
-- Undocumented opcodes: 
+- Undocumented opcodes:
 	- [http://nesdev.com/undocumented_opcodes.txt](http://nesdev.com/undocumented_opcodes.txt)
 	- [http://nesdev.com/extra_instructions.txt](http://nesdev.com/extra_instructions.txt)
+
+- const与非const函数代码复用：[https://stackoverflow.com/questions/123758/how-do-i-remove-code-duplication-between-similar-const-and-non-const-member-func](https://stackoverflow.com/questions/123758/how-do-i-remove-code-duplication-between-similar-const-and-non-const-member-func)
 
 ## Bug
 - PLP的Brk位：
