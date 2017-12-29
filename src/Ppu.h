@@ -5,15 +5,14 @@
  > Mail: netcan1996@gmail.com
  > Created Time: 2017-12-28 -- 15:48
  ****************************************************************************/
-
-#ifndef FCEMU_PPU_H
-#define FCEMU_PPU_H
+#pragma once
 #include "Base.h"
+
 
 class __PPUMem__ {
 private:
 	uint8_t VRAM[0x800];                // 2KB，存放2个NameTable
-	uint8_t SPRRAM[0x100];              // 256B SPR RAM，也就是OAM
+	uint8_t SPRRam[0x100];              // 256B SPR RAM，也就是OAM
 	uint8_t PatternTable[2][0x1000];    // 4KB * 2
 	uint8_t *NameTable[4][0x400];       // 1KB * 4
 	uint8_t Palette[0x20];              // 32B
@@ -32,20 +31,37 @@ private:
 	}
 
 public:
-	__PPUMem__() { memset(NameTable, 0x0, sizeof(NameTable)); }
+	__PPUMem__() { setHorizontalMirroring(); }
 	uint8_t &operator[](uint16_t addr) { return AT(addr); }
 	const uint8_t &operator[](uint16_t addr) const { return AT(addr); }
 
 	using iterator = MemIterator<__PPUMem__>;
 	iterator begin() { return iterator(this, 0); }
 	iterator end() { return iterator(this, 0x10000); }
+
+	void setHorizontalMirroring() {
+		for (int addr = 0; addr < 0x400; ++addr) {
+			NameTable[0][addr] = NameTable[1][addr] = &VRAM[addr];
+			NameTable[2][addr] = NameTable[3][addr] = &VRAM[addr + 0x400];
+		}
+	}
+
+	void setVerticalMirroring() {
+		for (int addr = 0; addr < 0x400; ++addr) {
+			NameTable[0][addr] = NameTable[2][addr] = &VRAM[addr];
+			NameTable[1][addr] = NameTable[3][addr] = &VRAM[addr + 0x400];
+		}
+	}
+
 };
 
 class PPU {
 private:
 	__PPUMem__ mem;
 
+public:
+	friend class Cartridge;
+	// 读取一个字节
+	inline uint8_t Read8(uint16_t addr) const { return mem[addr]; }
 };
 
-
-#endif //FCEMU_PPU_H

@@ -5,9 +5,8 @@
  > Mail: netcan1996@gmail.com
  > Created Time: 2017-12-05 -- 21:51
  ****************************************************************************/
+#pragma once
 
-#ifndef FCEMU_BASE_H
-#define FCEMU_BASE_H
 #include <cstdint>
 #include <string>
 #include <cstdio>
@@ -50,4 +49,3 @@ private:
 	MEMType *parent;
 };
 
-#endif //FCEMU_BASE_H

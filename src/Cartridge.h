@@ -5,16 +5,14 @@
  > Mail: netcan1996@gmail.com
  > Created Time: 2017-12-05 -- 20:33
  ****************************************************************************/
-
-#ifndef FCEMU_CARTRIDGE_H
-#define FCEMU_CARTRIDGE_H
-#include "Base.h"
+#pragma once
 #include "Cpu.h"
+#include "Ppu.h"
 
 class Cartridge {
 public:
 	Cartridge();
-	bool LoadRomFile(CPU &cpu, const std::string & filename);
+	bool LoadRomFile(CPU &cpu, PPU &ppu, const std::string & filename);
 	bool PrintHeader() const;
 
 private:
@@ -30,5 +28,3 @@ private:
 
 };
 
-
-#endif //FCEMU_CARTRIDGE_H

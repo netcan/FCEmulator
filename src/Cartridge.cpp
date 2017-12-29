@@ -12,7 +12,7 @@ Cartridge::Cartridge() {
 	static_assert(sizeof(header) == 16, "size of header should be 16 bytes");
 }
 
-bool Cartridge::LoadRomFile(CPU &cpu, const std::string &filename) {
+bool Cartridge::LoadRomFile(CPU &cpu, PPU &ppu, const std::string &filename) {
 	this->filename = filename;
 	FILE *fp = fopen(filename.c_str(), "r");
 	if(fp == NULL) {
@@ -22,21 +22,37 @@ bool Cartridge::LoadRomFile(CPU &cpu, const std::string &filename) {
 	}
 	fread((void*)&header, sizeof(header), 1, fp); // 读取头
 
-	__CPUMem__::iterator ramIt = cpu.mem.begin();
+	__CPUMem__::iterator cpuRamIt = cpu.mem.begin();
+	__PPUMem__::iterator ppuRamIt = ppu.mem.begin();
+	// PPU mirroring
+	if(! GetBit(header.ROMControl[0], 3)) { // Horizontal or Vectical Mirroring
+		GetBit(header.ROMControl[0], 0) ?
+		ppu.mem.setVerticalMirroring() :
+		ppu.mem.setHorizontalMirroring();
+	} else { // Four-screen mirroring
+
+	}
+
+	// Mapper
 	switch (JointBits(GetUpperBits(header.ROMControl[1]),
 	                  GetLowerBits(header.ROMControl[0]))) {
 		case 0: { // Mapper 0
 			if(GetBit(header.ROMControl[0], 2)) { // Trainer
 				uint8_t trainer[0x200];
 				fread((void*)trainer, sizeof(trainer), 1, fp);
-				std::copy(trainer, trainer + sizeof(trainer), ramIt + 7000);
+				std::copy(trainer, trainer + sizeof(trainer), cpuRamIt + 7000);
 			}
 			uint8_t PRGRomData[0x4000];
 			fread((void*)PRGRomData, sizeof(PRGRomData), 1, fp); // Lower PRG ROM Bank
-			std::copy(PRGRomData, PRGRomData + sizeof(PRGRomData), ramIt + 0x8000);
+			std::copy(PRGRomData, PRGRomData + sizeof(PRGRomData), cpuRamIt + 0x8000);
 			if(header.PRGRomBankCnt > 1)
 				fread((void*)PRGRomData, sizeof(PRGRomData), 1, fp); // Upper PRG ROM Bank
-			std::copy(PRGRomData, PRGRomData + sizeof(PRGRomData), ramIt + 0xc000);
+			std::copy(PRGRomData, PRGRomData + sizeof(PRGRomData), cpuRamIt + 0xc000);
+
+			uint8_t CHRRomData[0x2000];
+			long l = ftell(fp);
+			fread((void*)CHRRomData, sizeof(CHRRomData), 1, fp); // CHR Rom
+			std::copy(CHRRomData, CHRRomData + sizeof(CHRRomData), ppuRamIt + 0x0000);
 
 			break;
 		}

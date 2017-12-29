@@ -84,14 +84,19 @@ TEST(BaseTest, test_bit_opt) {
 
 TEST(CartridgeTest, test_loading_romfile) {
 	CPU cpu;
+	PPU ppu;
 	Cartridge cart;
-	EXPECT_TRUE(cart.LoadRomFile(cpu, "./nestest.nes"));
+	EXPECT_TRUE(cart.LoadRomFile(cpu, ppu, "./nestest.nes"));
 	cpu.Reset();
 	// 测试是否正常读取
 	EXPECT_EQ(cpu.Read8(0xc000), 0x4c);
 	EXPECT_EQ(cpu.Read16(0xc001), 0xc5f5);
 	EXPECT_EQ(cpu.Read8(0xCBAF), 0xa0);
 	EXPECT_EQ(cpu.Read8(0xF87C), 0x60);
+
+	EXPECT_EQ(ppu.Read8(0x0020), 0x80);
+	EXPECT_EQ(ppu.Read8(0x0022), 0xff);
+	EXPECT_EQ(ppu.Read8(0x07bf), 0x3c);
 	EXPECT_TRUE(cart.PrintHeader());
 }
 
@@ -160,20 +165,20 @@ TEST(CPUTest, test_ram_iterator) {
 	uint8_t *p = (it + 0x0001).get_raw_pointer();
 	*p = 0x34;
 	EXPECT_EQ(it[0x0801], 0x34);
-
 }
 
 
 
 TEST(CPUTest, opTest) {
 	CPU cpu;
+	PPU ppu;
 	Cartridge cart;
 	uint8_t &X = cpu.getX(), &Y = cpu.getY(),
 			&SP = cpu.getSP(), &A = cpu.getA();
 	uint16_t &PC = cpu.getPC();
 	ProcessorStatus &P = cpu.getP();
 
-	EXPECT_TRUE(cart.LoadRomFile(cpu, "./test.nes"));
+	EXPECT_TRUE(cart.LoadRomFile(cpu, ppu, "./test.nes"));
 	EXPECT_TRUE(cart.PrintHeader());
 	cpu.Reset();
 
@@ -648,6 +653,7 @@ TEST(CPUTest, opTest) {
 
 TEST(CPUTest, romTest) {
 	CPU cpu;
+	PPU ppu;
 	Cartridge cart;
 	uint8_t &X = cpu.getX(), &Y = cpu.getY(),
 			&SP = cpu.getSP(), &A = cpu.getA();
@@ -656,7 +662,7 @@ TEST(CPUTest, romTest) {
 
 	int targetX, targetY, targetSP, targetA, targetP, targetOpcode, targetCYC, targetPC;
 
-	EXPECT_TRUE(cart.LoadRomFile(cpu, "./nestest.nes"));
+	EXPECT_TRUE(cart.LoadRomFile(cpu, ppu, "./nestest.nes"));
 	EXPECT_TRUE(cart.PrintHeader());
 	cpu.Reset();
 
@@ -687,4 +693,74 @@ TEST(CPUTest, romTest) {
 		cpu.Execute();
 	}
 
+}
+
+
+TEST(PPUTest, test_ram) {
+	__PPUMem__ mem;
+	// 测试NameTable
+	for (int addr = 0; addr < 0x2000; ++addr) {
+		mem[addr] = addr & 0xff;
+		EXPECT_EQ(mem[addr], addr & 0xff);
+	}
+	// 测试NameTable
+	// 测试Horizontal Mirroring
+	mem.setHorizontalMirroring();
+	for (int i = 0; i < 0x400; ++i) {
+		mem[0x2000 + i] = i & 0xff;
+		EXPECT_EQ(mem[0x2000 + i], mem[0x2400 + i]);
+		mem[0x2800 + i] = (i+1) & 0xff;
+		EXPECT_EQ(mem[0x2800 + i], mem[0x2C00 + i]);
+	}
+	// 测试Vertical Mirroring
+	mem.setVerticalMirroring();
+	for (int i = 0; i < 0x400; ++i) {
+		mem[0x2000 + i] = i & 0xff;
+		EXPECT_EQ(mem[0x2000 + i], mem[0x2800 + i]);
+		mem[0x2800 + i] = (i+1) & 0xff;
+		EXPECT_EQ(mem[0x2400 + i], mem[0x2C00 + i]);
+	}
+
+	for (int i = 0; i < 0xf00; ++i)
+		EXPECT_EQ(mem[0x2000 + i], mem[0x3000 + i]);
+
+	// 测试Palette
+	for (int addr = 0x3f00; addr < 0x4000; ++addr) {
+		mem[addr] = addr & 0xff;
+		EXPECT_EQ(mem[((addr + 0x20) & 0xff) | 0x3f00], addr & 0xff);
+	}
+
+	// 剩余区域
+	for (int addr = 0x4000; addr < 0x10000; ++addr)
+		EXPECT_EQ(mem[addr], mem[addr & 0x3fff]);
+
+}
+
+TEST(PPUTest, test_ram_iterator) {
+	__PPUMem__ mem;
+	__PPUMem__::iterator it;
+	// 迭代器全写测试
+	for(it = mem.begin(); it != mem.end(); ++it) {
+		*it = 0x23;
+		EXPECT_EQ(*it, 0x23);
+	}
+	for(uint16_t addr = 0x0000; addr < 0xffff; ++addr)
+		EXPECT_EQ(mem[addr], 0x23);
+	EXPECT_EQ(mem[0xffff], 0x23);
+
+	std::fill(mem.begin(), mem.end(), 0x66);
+	std::for_each(mem.begin(), mem.end(), [](const auto &value) { EXPECT_EQ(value, 0x66); });
+
+
+	// 迭代器使用测试
+	it = mem.begin();
+	it[0x0001] = 0x33;
+	EXPECT_EQ(it[0x0001], 0x33);
+	*(it + 0x0002) = 0xaa;
+	EXPECT_EQ(it[0x0002], 0xaa);
+
+	// 指针测试
+	uint8_t *p = (it + 0x0001).get_raw_pointer();
+	*p = 0x34;
+	EXPECT_EQ(it[0x0001], 0x34);
 }

@@ -5,10 +5,9 @@
  > Mail: netcan1996@gmail.com
  > Created Time: 2017-12-03 -- 20:31
  ****************************************************************************/
-
-#ifndef FCEMU_CPU_H
-#define FCEMU_CPU_H
+#pragma once
 #include "Base.h"
+
 #define OpExeFuncArgs const Operation& self, CPU *cpu, uint8_t *operand, uint16_t& updated_pc, bool &crossed_page
 #define OpExeFuncDecl(func_name) static uint8_t func_name(OpExeFuncArgs)
 #define OpExeFuncDefine(func_name) uint8_t CPU::func_name(OpExeFuncArgs)
@@ -245,5 +244,3 @@ struct Operation { // 指令
 	ExeFunc exe; // 返回具体执行的cycles数目
 };
 
-
-#endif //FCEMU_CPU_H
