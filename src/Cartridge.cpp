@@ -30,6 +30,7 @@ bool Cartridge::LoadRomFile(CPU &cpu, PPU &ppu, const std::string &filename) {
 		ppu.mem.setVerticalMirroring() :
 		ppu.mem.setHorizontalMirroring();
 	} else { // Four-screen mirroring
+		// TODO: Four-screen mirroring
 
 	}
 
@@ -50,7 +51,6 @@ bool Cartridge::LoadRomFile(CPU &cpu, PPU &ppu, const std::string &filename) {
 			std::copy(PRGRomData, PRGRomData + sizeof(PRGRomData), cpuRamIt + 0xc000);
 
 			uint8_t CHRRomData[0x2000];
-			long l = ftell(fp);
 			fread((void*)CHRRomData, sizeof(CHRRomData), 1, fp); // CHR Rom
 			std::copy(CHRRomData, CHRRomData + sizeof(CHRRomData), ppuRamIt + 0x0000);
 

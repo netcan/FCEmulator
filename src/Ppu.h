@@ -58,10 +58,25 @@ public:
 class PPU {
 private:
 	__PPUMem__ mem;
-
+	uint8_t PPUCTRL, PPUMASK, PPUSTATUS,
+			OAMADDR, OAMDATA, PPUSCROLL,
+			PPUADDR, PPUDATA, OAMDMA;
 public:
+	friend class __CPUMem__;
 	friend class Cartridge;
 	// 读取一个字节
 	inline uint8_t Read8(uint16_t addr) const { return mem[addr]; }
+
+
+	uint8_t getPPUCTRL() const { return PPUCTRL; }
+	uint8_t getPPUMASK() const { return PPUMASK; }
+	uint8_t getPPUSTATUS() const { return PPUSTATUS; }
+	uint8_t getOAMADDR() const { return OAMADDR; }
+	uint8_t getOAMDATA() const { return OAMDATA; }
+	uint8_t getPPUSCROLL() const { return PPUSCROLL; }
+	uint8_t getPPUADDR() const { return PPUADDR; }
+	uint8_t getPPUDATA() const { return PPUDATA; }
+	uint8_t getOAMDMA() const { return OAMDMA; }
+
 };
 

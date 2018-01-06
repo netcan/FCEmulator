@@ -7,6 +7,7 @@
  ****************************************************************************/
 #pragma once
 #include "Base.h"
+#include "Ppu.h"
 
 #define OpExeFuncArgs const Operation& self, CPU *cpu, uint8_t *operand, uint16_t& updated_pc, bool &crossed_page
 #define OpExeFuncDecl(func_name) static uint8_t func_name(OpExeFuncArgs)
@@ -57,18 +58,19 @@ private:
 
 class __CPUMem__ {
 private:
-	uint8_t Ram[0x800]; // 0x0000-0x07ff
-	uint8_t PPURegister[0x8]; // 0x2000-0x2007
-	uint8_t APUIORegister[0x20]; // 0x4000-0x401f
+	uint8_t tmp;
+	uint8_t           Ram[0x800]; // 0x0000-0x07ff
+	uint8_t    *PPURegister[0x8]; // 0x2000-0x2007
+	uint8_t    *IORegister[0x20]; // 0x4000-0x401f, many for register of pAPU
 	uint8_t ExpansionRom[0x1fe0]; // 0x4020-0x5fff
-	uint8_t SRam[0x2000]; // 0x6000-0x7fff
-	uint8_t LowerPRGRom[0x4000]; // 0x8000-0xbfff
-	uint8_t UpperPRGRom[0x4000]; // 0xc000-0xffff
+	uint8_t         SRam[0x2000]; // 0x6000-0x7fff
+	uint8_t  LowerPRGRom[0x4000]; // 0x8000-0xbfff
+	uint8_t  UpperPRGRom[0x4000]; // 0xc000-0xffff
 
 	inline const uint8_t &AT(uint16_t addr) const {
 			return  addr < 0x2000 ? Ram[addr & 0x7ff]:
-					addr < 0x4000 ? PPURegister[addr & 0x7]:
-					addr < 0x4020 ? APUIORegister[(addr - 0x4000)]:
+					addr < 0x4000 ? (PPURegister[addr & 0x7] ? *PPURegister[addr & 0x7] : tmp):
+					addr < 0x4020 ? (IORegister[(addr - 0x4000)] ? *IORegister[(addr - 0x4000)] : tmp):
 					addr < 0x6000 ? ExpansionRom[addr - 0x4020]:
 					addr < 0x8000 ? SRam[addr - 0x6000]:
 					addr < 0xc000 ? LowerPRGRom[addr - 0x8000]:
@@ -88,6 +90,18 @@ public:
 	using iterator = MemIterator<__CPUMem__>;
 	iterator begin() { return iterator(this, 0); }
 	iterator end() { return iterator(this, 0x10000); }
+
+	void PPURegisterMapping(PPU &ppu) {
+		PPURegister[0x00] = &ppu.PPUCTRL;   // 0x2000, Write
+		PPURegister[0x01] = &ppu.PPUMASK;   // 0x2001, Write
+		PPURegister[0x02] = &ppu.PPUSTATUS; // 0x2002, Read
+		PPURegister[0x03] = &ppu.OAMADDR;   // 0x2003, Write
+		PPURegister[0x04] = &ppu.OAMDATA;   // 0x2004, Read/Write
+		PPURegister[0x05] = &ppu.PPUSCROLL; // 0x2005, Write twice for x and y
+		PPURegister[0x06] = &ppu.PPUADDR;   // 0x2006, Write twice for upper and lower address
+		PPURegister[0x07] = &ppu.PPUDATA;   // 0x2007, Read/Write, read buffer(post-fetch)
+		 IORegister[0x14] = &ppu.OAMDMA;    // 0x4014, Write
+	}
 };
 
 struct Operation;
@@ -98,6 +112,7 @@ public:
 	friend struct Operation;
 
 	CPU() : P(0x34), A(0), X(0), Y(0), SP(0xfd), cycles(0) { }; // Power Up
+	CPU(PPU &ppu) : CPU() { mem.PPURegisterMapping(ppu); }
 	// 读取一个字节
 	inline uint8_t Read8(uint16_t addr) const { return mem[addr]; }
 	// 读取一个字

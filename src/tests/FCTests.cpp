@@ -651,9 +651,28 @@ TEST(CPUTest, opTest) {
 
 }
 
-TEST(CPUTest, romTest) {
-	CPU cpu;
+TEST(CPUTest, mappingTest) { // 测试IO寄存器的映射状态
 	PPU ppu;
+	CPU cpu(ppu);
+	for(auto addr = 0x2000; addr < 0x2008; ++addr)
+		cpu.Write(addr, 0x3c);
+	cpu.Write(0x4014, 0x3c);
+	EXPECT_EQ(ppu.getPPUCTRL(), 0x3c);
+	EXPECT_EQ(ppu.getPPUMASK(), 0x3c);
+	EXPECT_EQ(ppu.getPPUSTATUS(), 0x3c);
+	EXPECT_EQ(ppu.getOAMADDR(), 0x3c);
+	EXPECT_EQ(ppu.getOAMDATA(), 0x3c);
+	EXPECT_EQ(ppu.getOAMDMA(), 0x3c);
+	EXPECT_EQ(ppu.getPPUSCROLL(), 0x3c);
+	EXPECT_EQ(ppu.getPPUADDR(), 0x3c);
+	EXPECT_EQ(ppu.getPPUDATA(), 0x3c);
+
+}
+
+TEST(CPUTest, romTest) {
+	PPU ppu;
+	CPU cpu(ppu);
+
 	Cartridge cart;
 	uint8_t &X = cpu.getX(), &Y = cpu.getY(),
 			&SP = cpu.getSP(), &A = cpu.getA();
