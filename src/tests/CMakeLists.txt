@@ -11,5 +11,8 @@ configure_file(nestest.log nestest.log COPYONLY)
 add_executable(FCtests
         FCTests.cpp)
 add_dependencies(FCtests test.nes)
-target_link_libraries(FCtests gtest gtest_main)
-target_link_libraries(FCtests FC)
+target_link_libraries(FCtests gtest gtest_main FC)
+
+add_executable(sdltest
+        sdltest.cpp)
+target_link_libraries(sdltest sdl2)
