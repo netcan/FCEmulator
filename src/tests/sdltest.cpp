@@ -2,9 +2,7 @@
 #include <iostream>
 #include <complex>
 
-/* Moving Rectangle */
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 	using namespace std::complex_literals;
 
 	SDL_Window *window;
@@ -21,7 +19,7 @@ int main(int argc, char *argv[])
 	                          SDL_WINDOWPOS_UNDEFINED,
 	                          SDL_WINDOWPOS_UNDEFINED,
 	                          w, h,
-	                          SDL_WINDOW_RESIZABLE);
+	                          SDL_WINDOW_SHOWN);
 	renderer = SDL_CreateRenderer(window, -1, 0);
 	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, w, h);
 
