@@ -393,6 +393,7 @@ uint8_t CPU::Execute() {
 									return uint8_t(self.cycles + crossed_page + 1); \
 								} \
 								return self.cycles;
+
 #define FixCycle self.cycles + crossed_page;
 #define OpRM(R, op) cpu->R op *operand; \
 					cpu->P.Negative = Sign(cpu->R); \

@@ -13,6 +13,6 @@ ExternalProject_Add(
 set(SOURCE_FILES main.cpp Cpu.cpp Cpu.h Cartridge.cpp Cartridge.h Base.h Famicom.cpp Famicom.h Ppu.cpp Ppu.h)
 add_library(FC ${SOURCE_FILES})
 add_executable(FCemu ${SOURCE_FILES})
-target_link_libraries(FCemu FC)
+target_link_libraries(FCemu FC sdl2)
 
 add_subdirectory(tests)

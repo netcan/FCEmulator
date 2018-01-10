@@ -7,6 +7,7 @@
  ****************************************************************************/
 #pragma once
 #include "Base.h"
+#include <SDL2/SDL.h>
 
 
 class __PPUMem__ {
@@ -61,12 +62,22 @@ private:
 	uint8_t PPUCTRL, PPUMASK, PPUSTATUS,
 			OAMADDR, OAMDATA, PPUSCROLL,
 			PPUADDR, PPUDATA, OAMDMA;
+
+	static const SDL_Color palette[0x40];
+
+	SDL_Window *window;
+	SDL_Renderer *renderer;
+	SDL_Texture *texture;
+	SDL_Event event;
+	int win_width, win_height;
 public:
 	friend class __CPUMem__;
 	friend class Cartridge;
 	// 读取一个字节
 	inline uint8_t Read8(uint16_t addr) const { return mem[addr]; }
-
+	PPU();
+	~PPU();
+	void showPalette();
 
 	uint8_t getPPUCTRL() const { return PPUCTRL; }
 	uint8_t getPPUMASK() const { return PPUMASK; }

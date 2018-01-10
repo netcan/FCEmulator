@@ -44,14 +44,14 @@ bool Cartridge::LoadRomFile(CPU &cpu, PPU &ppu, const std::string &filename) {
 				std::copy(trainer, trainer + sizeof(trainer), cpuRamIt + 7000);
 			}
 			uint8_t PRGRomData[0x4000];
-			fread((void*)PRGRomData, sizeof(PRGRomData), 1, fp); // Lower PRG ROM Bank
+			fread((void*)PRGRomData, sizeof(PRGRomData), 1, fp); // Lower PRG ROM Bank to cpu
 			std::copy(PRGRomData, PRGRomData + sizeof(PRGRomData), cpuRamIt + 0x8000);
 			if(header.PRGRomBankCnt > 1)
-				fread((void*)PRGRomData, sizeof(PRGRomData), 1, fp); // Upper PRG ROM Bank
+				fread((void*)PRGRomData, sizeof(PRGRomData), 1, fp); // Upper PRG ROM Bank to cpu
 			std::copy(PRGRomData, PRGRomData + sizeof(PRGRomData), cpuRamIt + 0xc000);
 
 			uint8_t CHRRomData[0x2000];
-			fread((void*)CHRRomData, sizeof(CHRRomData), 1, fp); // CHR Rom
+			fread((void*)CHRRomData, sizeof(CHRRomData), 1, fp); // CHR Rom to ppu
 			std::copy(CHRRomData, CHRRomData + sizeof(CHRRomData), ppuRamIt + 0x0000);
 
 			break;

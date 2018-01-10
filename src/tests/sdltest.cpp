@@ -67,5 +67,10 @@ int main(int argc, char *argv[]) {
 	SDL_Event event;
 	while (event.type != SDL_QUIT)
 		SDL_PollEvent(&event);
+
+	SDL_DestroyTexture(texture);
+	SDL_DestroyRenderer(renderer);
+	SDL_DestroyWindow(window);
+	SDL_Quit();
 	return 0;
 }

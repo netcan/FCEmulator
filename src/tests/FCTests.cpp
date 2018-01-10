@@ -783,3 +783,8 @@ TEST(PPUTest, test_ram_iterator) {
 	*p = 0x34;
 	EXPECT_EQ(it[0x0001], 0x34);
 }
+
+TEST(PPUTest, test_palette) {
+	PPU ppu;
+	ppu.showPalette();
+}
