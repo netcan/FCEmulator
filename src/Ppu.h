@@ -18,11 +18,17 @@ private:
 	uint8_t *NameTable[4][0x400];       // 1KB * 4
 	uint8_t Palette[0x20];              // 32B
 	inline const uint8_t &AT(uint16_t addr) const {
-		return addr < 0x2000 ? PatternTable[addr >> 0x0c][addr & 0xfff]:
-		       addr < 0x3000 ? *NameTable[(addr >> 0x0a) & 0x03][addr & 0x3ff]:
-		       addr < 0x3f00 ? AT(addr & 0x2fff) :
-		       addr < 0x4000 ? Palette[addr & 0x1f]:
-		       AT(addr & 0x3fff);
+		const uint8_t *ret =
+				&(addr < 0x2000 ? PatternTable[addr >> 0x0c][addr & 0xfff]:
+				  addr < 0x3000 ? *NameTable[(addr >> 0x0a) & 0x03][addr & 0x3ff]:
+				  addr < 0x3f00 ? AT(addr & 0x2fff) :
+				  addr < 0x4000 ? Palette[addr & 0x1f]:
+				  AT(addr & 0x3fff));
+
+		// hook
+		if(addr >= 0x3f00 && addr < 0x4000 && (addr & 0x1f) % 4 == 0)
+			ret = &Palette[0x00];
+		return *ret;
 	}
 
 	inline uint8_t &AT(uint16_t addr) { // 复用const版本
