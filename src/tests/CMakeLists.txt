@@ -8,6 +8,8 @@ add_custom_target(
 configure_file(nestest.nes nestest.nes COPYONLY)
 configure_file(nestest.log nestest.log COPYONLY)
 
+configure_file(Super\ Mario\ Bros\ \(E\).nes Super\ Mario\ Bros\ \(E\).nes COPYONLY)
+
 add_executable(FCtests
         FCTests.cpp)
 add_dependencies(FCtests test.nes)

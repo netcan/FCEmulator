@@ -25,7 +25,6 @@ private:
 				  addr < 0x4000 ? Palette[addr & 0x1f]:
 				  AT(addr & 0x3fff));
 
-		// hook
 		if(addr >= 0x3f00 && addr < 0x4000 && (addr & 0x1f) % 4 == 0)
 			ret = &Palette[0x00];
 		return *ret;
@@ -68,6 +67,7 @@ private:
 	uint8_t PPUCTRL, PPUMASK, PPUSTATUS,
 			OAMADDR, OAMDATA, PPUSCROLL,
 			PPUADDR, PPUDATA, OAMDMA;
+	uint32_t cycles; // PPU的时钟周期数，是cpu的三倍
 
 	static const SDL_Color palette[0x40];
 
@@ -75,7 +75,9 @@ private:
 	SDL_Renderer *renderer;
 	SDL_Texture *texture;
 	SDL_Event event;
-	int win_width, win_height;
+
+	size_t screen_width, screen_height;
+	const size_t frame_width = 341, frame_height = 262;
 public:
 	friend class __CPUMem__;
 	friend class Cartridge;
@@ -84,6 +86,7 @@ public:
 	PPU();
 	~PPU();
 	void showPalette();
+	void showPatternTable();
 
 	uint8_t getPPUCTRL() const { return PPUCTRL; }
 	uint8_t getPPUMASK() const { return PPUMASK; }

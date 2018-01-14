@@ -36,7 +36,7 @@ bool Cartridge::LoadRomFile(CPU &cpu, PPU &ppu, const std::string &filename) {
 
 	// Mapper
 	switch (JointBits(GetUpperBits(header.ROMControl[1]),
-	                  GetLowerBits(header.ROMControl[0]))) {
+	                  GetUpperBits(header.ROMControl[0]))) {
 		case 0: { // Mapper 0
 			if(GetBit(header.ROMControl[0], 2)) { // Trainer
 				uint8_t trainer[0x200];
@@ -73,7 +73,7 @@ bool Cartridge::PrintHeader() const {
 				       "PRG-RAM size: %dx8k\n",
 		       filename.c_str(), header.PRGRomBankCnt,
 		       header.CHRRomBankCnt, JointBits(GetUpperBits(header.ROMControl[1]),
-		                                       GetLowerBits(header.ROMControl[0])),
+		                                       GetUpperBits(header.ROMControl[0])),
 		       header.PRGRamBankCnt);
 		return true;
 	} else return false;

@@ -7,7 +7,10 @@
 - 指令细节：[https://nesdev.com/6502_cpu.txt](https://nesdev.com/6502_cpu.txt)
 
 ## PPU
-- 手册：[https://wiki.nesdev.com/w/index.php/PPU_programmer_reference](https://wiki.nesdev.com/w/index.php/PPU_programmer_reference)
+手册：
+- [https://wiki.nesdev.com/w/index.php/PPU_programmer_reference](https://wiki.nesdev.com/w/index.php/PPU_programmer_reference)
+- [https://n3s.io/index.php?title=How_It_Works](https://n3s.io/index.php?title=How_It_Works)
+- **[https://wiki.nesdev.com/w/index.php/PPU_scrolling](https://wiki.nesdev.com/w/index.php/PPU_scrolling)**
 
 ## Developing
 - gtest框架：[https://github.com/google/googletest/blob/master/googletest/docs/Primer.md](https://github.com/google/googletest/blob/master/googletest/docs/Primer.md)

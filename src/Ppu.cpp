@@ -44,8 +44,8 @@ const SDL_Color PPU::palette[] = {
 };
 
 PPU::PPU() {
-	win_width = 256;
-	win_height = 240;
+	screen_width = 256;
+	screen_height = 240;
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't initialize SDL: %s", SDL_GetError());
@@ -55,10 +55,10 @@ PPU::PPU() {
 	window = SDL_CreateWindow("Famicom emulator by netcan",
 							  SDL_WINDOWPOS_UNDEFINED,
 							  SDL_WINDOWPOS_UNDEFINED,
-							  win_width, win_height,
+							  screen_width, screen_height,
 							  SDL_WINDOW_SHOWN);
 	renderer = SDL_CreateRenderer(window, -1, 0);
-	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, win_width*2, win_height*2);
+	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, screen_width, screen_height);
 }
 
 PPU::~PPU() {
@@ -70,7 +70,7 @@ PPU::~PPU() {
 
 void PPU::showPalette() {
 	SDL_SetRenderTarget(renderer, texture);
-	SDL_Rect color_tile {0, 0, 32, 32};
+	SDL_Rect color_tile {0, 0, 15, 15};
 
 	// 绘制调色板
 	for (int j = 0; j < 4; ++j) {
@@ -85,7 +85,7 @@ void PPU::showPalette() {
 
 	// 渲染调色板
 	SDL_Rect board {0, 0, 16 * color_tile.w, 4 * color_tile.h};
-	SDL_SetWindowSize(window, board.w, board.h);
+	SDL_SetWindowSize(window, board.w * 3, board.h * 3);
 	SDL_SetRenderTarget(renderer, NULL);
 	SDL_RenderCopy(renderer, texture, &board, NULL);
 
@@ -93,4 +93,44 @@ void PPU::showPalette() {
 	while(event.type != SDL_QUIT)
 		SDL_PollEvent(&event);
 
+}
+
+void PPU::showPatternTable() {
+	SDL_SetRenderTarget(renderer, texture);
+	const SDL_Color tile_colors[] = {
+			palette[0x00],
+			palette[0x01],
+			palette[0x02],
+			palette[0x03],
+	};
+
+
+	// left and right，绘制PatternTable
+	for(int j = 0; j < 16; ++j) {
+		for(int i = 0; i < 32; ++i) {
+			for(int y = 0; y < 8; ++y) {
+				uint16_t lower_tile_addr = y | ((i & 0xf) << 0x4) | j << 0x8 | GetBit(i, 4) << 0xC,
+				         upper_tile_addr = lower_tile_addr | 0x8;
+				uint8_t lower_tile = mem[lower_tile_addr],
+						upper_tile = mem[upper_tile_addr];
+
+				for (int x = 0; x < 8; ++x) {
+					const SDL_Color &color = tile_colors[ (GetBit(upper_tile, 7 - x) << 0x1) | GetBit(lower_tile, 7-x) ];
+					SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+					SDL_RenderDrawPoint(renderer, i * 8 + x, j * 8 + y);
+
+				}
+			}
+		}
+	}
+
+	// 渲染Pattern Table
+	SDL_Rect board {0, 0, 256, 128};
+	SDL_SetWindowSize(window, board.w * 3, board.h * 3);
+	SDL_SetRenderTarget(renderer, NULL);
+	SDL_RenderCopy(renderer, texture, &board, NULL);
+
+	SDL_RenderPresent(renderer);
+	while(event.type != SDL_QUIT)
+		SDL_PollEvent(&event);
 }
