@@ -13,7 +13,7 @@
 class __PPUMem__ {
 private:
 	uint8_t VRAM[0x800];                // 2KB，存放2个NameTable
-	uint8_t SPRRam[0x100];              // 256B SPR RAM，也就是OAM
+	uint8_t OAM[0x100];                 // 256B SPR RAM
 	uint8_t PatternTable[2][0x1000];    // 4KB * 2
 	uint8_t *NameTable[4][0x400];       // 1KB * 4
 	uint8_t Palette[0x20];              // 32B
@@ -77,16 +77,18 @@ private:
 	SDL_Event event;
 
 	size_t screen_width, screen_height;
-	const size_t frame_width = 341, frame_height = 262;
+	const size_t frame_width = 341, frame_height = 262; // NTSC, 60fps
 public:
 	friend class __CPUMem__;
 	friend class Cartridge;
 	// 读取一个字节
 	inline uint8_t Read8(uint16_t addr) const { return mem[addr]; }
-	PPU();
+	PPU(): cycles(0) {};
 	~PPU();
 	void showPalette();
 	void showPatternTable();
+
+	void Execute(uint8_t cycle); // 执行cycle个周期，这里的cycle是cpu返回的周期，需要*3
 
 	uint8_t getPPUCTRL() const { return PPUCTRL; }
 	uint8_t getPPUMASK() const { return PPUMASK; }

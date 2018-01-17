@@ -10,7 +10,10 @@
 手册：
 - [https://wiki.nesdev.com/w/index.php/PPU_programmer_reference](https://wiki.nesdev.com/w/index.php/PPU_programmer_reference)
 - [https://n3s.io/index.php?title=How_It_Works](https://n3s.io/index.php?title=How_It_Works)
-- **[https://wiki.nesdev.com/w/index.php/PPU_scrolling](https://wiki.nesdev.com/w/index.php/PPU_scrolling)**
+- [https://wiki.nesdev.com/w/index.php/PPU_scrolling](https://wiki.nesdev.com/w/index.php/PPU_scrolling)
+- [https://wiki.nesdev.com/w/index.php/PPU_rendering](https://wiki.nesdev.com/w/index.php/PPU_rendering)
+- [https://wiki.nesdev.com/w/images/d/d1/Ntsc_timing.png](https://wiki.nesdev.com/w/images/d/d1/Ntsc_timing.png)
+- [https://wiki.nesdev.com/w/index.php/PPU_sprite_evaluation](https://wiki.nesdev.com/w/index.php/PPU_sprite_evaluation)
 
 ## Developing
 - gtest框架：[https://github.com/google/googletest/blob/master/googletest/docs/Primer.md](https://github.com/google/googletest/blob/master/googletest/docs/Primer.md)

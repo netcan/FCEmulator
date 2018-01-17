@@ -7,12 +7,7 @@
  ****************************************************************************/
 #include "Cpu.h"
 
-ProcessorStatus::ProcessorStatus(uint8_t value): Negative(this->P), Overflow(this->P),
-                                    BrkExecuted(this->P), Invalid(this->P), Decimal(this->P),
-                                    IrqDisabled(this->P), Zero(this->P),
-                                    Carry(this->P) {
-	P = value; // 初值
-}
+ProcessorStatus::ProcessorStatus(uint8_t value): P(value) {}
 
 
 const Operation **CPU::optable = CPU::InitOptable();
@@ -359,6 +354,20 @@ void CPU::FetchOperands(CPU::OpAddressingMode addressing_mode, uint8_t *& oprand
 			oprand = nullptr;
 			break;
 	}
+}
+
+uint8_t CPU::Interrupt(uint16_t vec_addr) {
+	auto    PCH = uint8_t( ( (PC) >> 0x8) & 0xff),
+			PCL = uint8_t((PC) & 0xff);
+	Push(PCH);
+	Push(PCL);
+	P.BrkExecuted = false;
+	Push(P);
+	P.IrqDisabled = true;
+	PC = Read16(vec_addr);
+
+	cycles += 7;
+	return 7; // 7个周期
 }
 
 uint8_t CPU::Execute() {

@@ -15,43 +15,60 @@
 #define ExeFunc(op_code_entity, cpu, oprand, updated_pc, crossed_page) op_code_entity->exe(*op_code_entity, cpu, oprand, updated_pc, crossed_page)
 inline bool Sign(uint8_t x) { return GetBit(x, 7); };
 
-class ProcessorStatus;
+//class ProcessorStatus;
 
-template <size_t pos>
-class PSField {
-public:
-	PSField(uint8_t& P) : P(P) {}
-	inline PSField &operator=(bool b) {
-		assert(pos >= 0 && pos < 8);
-		b ? SetBit() : ClearBit();
-		return *this;
-	}
-	inline operator bool() const { return static_cast<bool>((P >> pos) & 1); };
-	inline void SetBit() { P |= 1u << pos; }
-	inline void ClearBit() { P &= ~(1u << pos); }
+//template <size_t pos>
+//class PSField {
+//public:
+//	PSField(uint8_t& P) : P(P) {}
+//	inline PSField &operator=(bool b) {
+//		assert(pos >= 0 && pos < 8);
+//		b ? SetBit() : ClearBit();
+//		return *this;
+//	}
+//	inline operator bool() const { return static_cast<bool>((P >> pos) & 1); };
+//	inline void SetBit() { P |= 1u << pos; }
+//	inline void ClearBit() { P &= ~(1u << pos); }
+//
+//private:
+//	uint8_t &P;
+//};
+//
+//class ProcessorStatus {
+//public:
+//	ProcessorStatus(uint8_t value = 0x34);
+//	inline operator uint8_t() const { return P; }
+//	inline ProcessorStatus&operator=(uint8_t value) {
+//		P = value;
+//		return *this;
+//	}
+//
+//	PSField<7> Negative;      // 当运算结果最高位第7位为1的时候置位，表明负数
+//	PSField<6> Overflow;      // 当两个补码运算产生非法的结果置位，例如正+正为负的时候
+//	PSField<4> BrkExecuted;   // 用于标记当BRK指令执行后，产生的IRQ中断（软件中断）
+//	PSField<5> Invalid;       // 无效位
+//	PSField<3> Decimal;       // 6502通过设置该标志位切换到BCD模式，由于2A03不支持BCD，所以这位是无效的
+//	PSField<2> IrqDisabled;   // 通过设置该位可以屏蔽IRQ中断
+//	PSField<1> Zero;          // 当运算结果为0的时候置位
+//	PSField<0> Carry;         // 当运算结果最高位第7位符号翻转的时候置位
+//private:
+//	uint8_t P;
+//};
 
-private:
-	uint8_t &P;
-};
-
-class ProcessorStatus {
-public:
+union ProcessorStatus {
 	ProcessorStatus(uint8_t value = 0x34);
 	inline operator uint8_t() const { return P; }
-	inline ProcessorStatus&operator=(uint8_t value) {
-		P = value;
-		return *this;
-	}
-
-	PSField<7> Negative;      // 当运算结果最高位第7位为1的时候置位，表明负数
-	PSField<6> Overflow;      // 当两个补码运算产生非法的结果置位，例如正+正为负的时候
-	PSField<4> BrkExecuted;   // 用于标记当BRK指令执行后，产生的IRQ中断（软件中断）
-	PSField<5> Invalid;       // 无效位
-	PSField<3> Decimal;       // 6502通过设置该标志位切换到BCD模式，由于2A03不支持BCD，所以这位是无效的
-	PSField<2> IrqDisabled;   // 通过设置该位可以屏蔽IRQ中断
-	PSField<1> Zero;          // 当运算结果为0的时候置位
-	PSField<0> Carry;         // 当运算结果最高位第7位符号翻转的时候置位
-private:
+	// 低位到高位的顺序，实现相关
+	struct {
+		unsigned Carry: 1;         // 当运算结果最高位第7位符号翻转的时候置位
+		unsigned Zero: 1;          // 当运算结果为0的时候置位
+		unsigned IrqDisabled: 1;   // 通过设置该位可以屏蔽IRQ中断
+		unsigned Decimal: 1;       // 6502通过设置该标志位切换到BCD模式，由于2A03不支持BCD，所以这位是无效的
+		unsigned BrkExecuted: 1;   // 用于标记当BRK指令执行后，产生的IRQ中断（软件中断）
+		unsigned Invalid: 1;       // 无效位
+		unsigned Overflow: 1;      // 当两个补码运算产生非法的结果置位，例如正+正为负的时候
+		unsigned Negative: 1;
+	};
 	uint8_t P;
 };
 
@@ -125,6 +142,9 @@ public:
 	inline uint8_t Pop() { return mem[0x100 | (++SP)]; }
 
 	inline void Reset() { PC = Read16(static_cast<uint16_t>(InterruptVector::Reset)); }
+
+	uint8_t Interrupt(uint16_t vec_addr); // 设置中断
+
 	uint8_t Execute();
 #ifndef NDEBUG
 	ProcessorStatus &getP() { return P; }

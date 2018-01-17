@@ -134,3 +134,9 @@ void PPU::showPatternTable() {
 	while(event.type != SDL_QUIT)
 		SDL_PollEvent(&event);
 }
+
+void PPU::Execute(uint8_t cycle) {
+	cycles += 3 * cycle;
+	cycles %= frame_height * frame_width;
+
+}
