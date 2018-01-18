@@ -46,6 +46,7 @@ const SDL_Color PPU::palette[] = {
 PPU::PPU() {
 	screen_width = 256;
 	screen_height = 240;
+	cycles = 0;
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't initialize SDL: %s", SDL_GetError());
@@ -55,7 +56,7 @@ PPU::PPU() {
 	window = SDL_CreateWindow("Famicom emulator by netcan",
 							  SDL_WINDOWPOS_UNDEFINED,
 							  SDL_WINDOWPOS_UNDEFINED,
-							  screen_width, screen_height,
+							  screen_width * 3, screen_height * 3,
 							  SDL_WINDOW_SHOWN);
 	renderer = SDL_CreateRenderer(window, -1, 0);
 	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, screen_width, screen_height);
@@ -135,8 +136,8 @@ void PPU::showPatternTable() {
 		SDL_PollEvent(&event);
 }
 
-void PPU::Execute(uint8_t cycle) {
-	cycles += 3 * cycle;
-	cycles %= frame_height * frame_width;
+void PPU::Execute(uint8_t cpu_cycles) {
+	uint8_t remain_cycles = 3 * cpu_cycles;
+	cycles = (cycles + remain_cycles) % frame_height * frame_width;
 
 }

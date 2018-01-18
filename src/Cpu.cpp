@@ -370,6 +370,12 @@ uint8_t CPU::Interrupt(uint16_t vec_addr) {
 	return 7; // 7个周期
 }
 
+void CPU::ShowStatus() {
+	printf("PC: %X A:%X X:%X Y:%X P:%X SP:%X CYC:%d\n",
+	       PC, A, X, Y, P.P, SP, cycles
+	);
+}
+
 uint8_t CPU::Execute() {
 	// 执行一条指令，返回执行周期数
 	// 取指->译码->执行->更新PC->...

@@ -7,3 +7,14 @@
  ****************************************************************************/
 
 #include "Famicom.h"
+
+void Famicom::Run() {
+	uint8_t cycles; // based on cpu
+	while(runing) {
+		cpu.ShowStatus();
+		cycles = cpu.Execute();
+		ppu.Execute(cycles);
+
+	}
+
+}

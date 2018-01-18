@@ -109,9 +109,9 @@ public:
 	iterator end() { return iterator(this, 0x10000); }
 
 	void PPURegisterMapping(PPU &ppu) {
-		PPURegister[0x00] = &ppu.PPUCTRL;   // 0x2000, Write
-		PPURegister[0x01] = &ppu.PPUMASK;   // 0x2001, Write
-		PPURegister[0x02] = &ppu.PPUSTATUS; // 0x2002, Read
+		PPURegister[0x00] = &ppu.PPUCTRL.ctrl;   // 0x2000, Write
+		PPURegister[0x01] = &ppu.PPUMASK.mask;   // 0x2001, Write
+		PPURegister[0x02] = &ppu.PPUSTATUS.status; // 0x2002, Read
 		PPURegister[0x03] = &ppu.OAMADDR;   // 0x2003, Write
 		PPURegister[0x04] = &ppu.OAMDATA;   // 0x2004, Read/Write
 		PPURegister[0x05] = &ppu.PPUSCROLL; // 0x2005, Write twice for x and y
@@ -145,6 +145,7 @@ public:
 
 	uint8_t Interrupt(uint16_t vec_addr); // 设置中断
 
+	void ShowStatus();
 	uint8_t Execute();
 #ifndef NDEBUG
 	ProcessorStatus &getP() { return P; }

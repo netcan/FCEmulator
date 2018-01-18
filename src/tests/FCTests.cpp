@@ -806,3 +806,4 @@ TEST(PPUTest, test_pattern_table) {
 	cart.PrintHeader();
 	ppu.showPatternTable();
 }
+

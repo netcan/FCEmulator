@@ -64,8 +64,44 @@ public:
 class PPU {
 private:
 	__PPUMem__ mem;
-	uint8_t PPUCTRL, PPUMASK, PPUSTATUS,
-			OAMADDR, OAMDATA, PPUSCROLL,
+	union {
+		struct {
+			unsigned NN: 2; // nametable的基地址
+			unsigned I: 1;  // CPU读写PPUDATA后VRAM地址+1/32
+			unsigned S: 1;  // 8x8精灵的pattern table地址
+			unsigned B: 1;  // 背景的pattern table地址
+			unsigned H: 1;  // 精灵的尺寸
+			unsigned P: 1;  // PPU的主从模式选择
+			unsigned V: 1;  // 是否产生NMI中断（当VBLANK开始的时候）
+		};
+		uint8_t ctrl;
+	} PPUCTRL;
+
+	union {
+		struct {
+			unsigned g: 1;  // 灰度
+			unsigned m: 1;  // 屏幕最左边8个像素是否显示背景
+			unsigned M: 1;  // 屏幕最左边8个像素是否显示精灵
+			unsigned b: 1;  // 是否显示背景
+			unsigned s: 1;  // 是否显示精灵
+			unsigned R: 1;  // Emphasize red
+			unsigned G: 1;  // Emphasize green
+			unsigned B: 1;  // Emphasize blue
+		};
+		uint8_t mask;
+	} PPUMASK;
+
+	union {
+		struct {
+			unsigned empty: 5;  // 常量
+			unsigned O: 1;      // Sprite overflow
+			unsigned S: 1;      // Sprite 0 Hit
+			unsigned V: 1;      // Vblank是否开始
+		};
+		uint8_t status;
+	} PPUSTATUS;
+
+	uint8_t OAMADDR, OAMDATA, PPUSCROLL,
 			PPUADDR, PPUDATA, OAMDMA;
 	uint32_t cycles; // PPU的时钟周期数，是cpu的三倍
 
@@ -83,16 +119,16 @@ public:
 	friend class Cartridge;
 	// 读取一个字节
 	inline uint8_t Read8(uint16_t addr) const { return mem[addr]; }
-	PPU(): cycles(0) {};
+	PPU();
 	~PPU();
 	void showPalette();
 	void showPatternTable();
 
 	void Execute(uint8_t cycle); // 执行cycle个周期，这里的cycle是cpu返回的周期，需要*3
 
-	uint8_t getPPUCTRL() const { return PPUCTRL; }
-	uint8_t getPPUMASK() const { return PPUMASK; }
-	uint8_t getPPUSTATUS() const { return PPUSTATUS; }
+	uint8_t getPPUCTRL() const { return PPUCTRL.ctrl; }
+	uint8_t getPPUMASK() const { return PPUMASK.mask; }
+	uint8_t getPPUSTATUS() const { return PPUSTATUS.status; }
 	uint8_t getOAMADDR() const { return OAMADDR; }
 	uint8_t getOAMDATA() const { return OAMDATA; }
 	uint8_t getPPUSCROLL() const { return PPUSCROLL; }

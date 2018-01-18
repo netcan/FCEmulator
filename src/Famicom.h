@@ -13,14 +13,16 @@
 class Famicom {
 public:
 	Famicom(const std::string & RomFileName) {
-		cart.LoadRomFile(cpu, ppu, RomFileName);
+		runing = cart.LoadRomFile(cpu, ppu, RomFileName);
 		cpu.Reset();
 	}
+	void Run();
 
 private:
 	CPU cpu;
 	PPU ppu;
 	Cartridge cart;
+	bool runing;
 
 };
 
