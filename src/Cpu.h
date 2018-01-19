@@ -9,10 +9,10 @@
 #include "Base.h"
 #include "Ppu.h"
 
-#define OpExeFuncArgs const Operation& self, CPU *cpu, uint8_t *operand, uint16_t& updated_pc, bool &crossed_page
+#define OpExeFuncArgs const Operation& self, CPU *cpu, const uint8_t *operand, uint16_t& updated_pc, bool &crossed_page
 #define OpExeFuncDecl(func_name) static uint8_t func_name(OpExeFuncArgs)
 #define OpExeFuncDefine(func_name) uint8_t CPU::func_name(OpExeFuncArgs)
-#define ExeFunc(op_code_entity, cpu, oprand, updated_pc, crossed_page) op_code_entity->exe(*op_code_entity, cpu, oprand, updated_pc, crossed_page)
+#define ExeFunc(op_code_entity, cpu, oprand, updated_pc, crossed_page) op_code_entity->exe(*op_code_entity, cpu, operand, updated_pc, crossed_page)
 inline bool Sign(uint8_t x) { return GetBit(x, 7); };
 
 //class ProcessorStatus;
@@ -104,6 +104,7 @@ public:
 	uint8_t &operator[](uint16_t addr) { return AT(addr); }
 	const uint8_t &operator[](uint16_t addr) const { return AT(addr); }
 
+
 	using iterator = MemIterator<__CPUMem__>;
 	iterator begin() { return iterator(this, 0); }
 	iterator end() { return iterator(this, 0x10000); }
@@ -184,7 +185,7 @@ private:
 		IRQ = 0xfffe
 	};
 
-	void FetchOperands(OpAddressingMode addressing_mode, uint8_t *& oprand, bool &crossed_page);
+	void FetchOperands(OpAddressingMode addressing_mode, uint16_t &opd_addr, const uint8_t *& operand, bool &crossed_page);
 
 /**************** 指令声明区Begin ****************/
 	OpExeFuncDecl(OP_ASL); // ASL - Arithmetic Shift Left

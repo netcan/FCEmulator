@@ -285,73 +285,84 @@ const Operation ** CPU::InitOptable() {
 	return optable;
 }
 
-void CPU::FetchOperands(CPU::OpAddressingMode addressing_mode, uint8_t *& oprand, bool& crossed_page) {
-	static uint8_t tempOprand = 0;
-	uint16_t addr, pointer;
+void CPU::FetchOperands(CPU::OpAddressingMode addressing_mode, uint16_t &opd_addr, const uint8_t *& operand, bool& crossed_page) {
+	static uint8_t tempOprand = 0; // 读取用，暂存
+	operand = &tempOprand;
+	uint16_t pointer;
 	switch (addressing_mode) {
 		case OpAddressingMode::Implicit:
 		case OpAddressingMode::Accumulator:
-			oprand = nullptr;
+			operand = nullptr;
 			break;
 		case OpAddressingMode::Immediate:
-			tempOprand = Read8(PC + 1);
-			oprand = &tempOprand;
+			opd_addr = PC+1;
+			tempOprand = Read8(opd_addr);
+			operand = &tempOprand;
 			break;
 
 		case OpAddressingMode::Absolute:
-			addr = Read16(PC + 1);
-			oprand = &mem[addr];
+			opd_addr = Read16(PC + 1);
+			tempOprand = Read8(opd_addr);
+			operand = &tempOprand;
 			break;
 
 		case OpAddressingMode::AbsoluteX:
-			addr = Read16(PC + 1);
-			if( ((addr + X) & 0xff00) != (addr & 0xff00) ) crossed_page = true;
-			addr += X;
-			oprand = &mem[addr];
+			opd_addr = Read16(PC + 1);
+			if( ((opd_addr + X) & 0xff00) != (opd_addr & 0xff00) ) crossed_page = true;
+			opd_addr += X;
+			tempOprand = Read8(opd_addr);
+			operand = &tempOprand;
 			break;
 		case OpAddressingMode::AbsoluteY:
-			addr = Read16(PC + 1);
-			if( ((addr + Y) & 0xff00) != (addr & 0xff00) ) crossed_page = true;
-			addr += Y;
-			oprand = &mem[addr];
+			opd_addr = Read16(PC + 1);
+			if( ((opd_addr + Y) & 0xff00) != (opd_addr & 0xff00) ) crossed_page = true;
+			opd_addr += Y;
+			tempOprand = Read8(opd_addr);
+			operand = &tempOprand;
 			break;
 
 		case OpAddressingMode::Relative: // 分支指令专用
-			tempOprand = Read8(PC + 1);
-			oprand = &tempOprand;
+			opd_addr = PC + 1;
+			tempOprand = Read8(opd_addr);
+			operand = &tempOprand;
 			break;
 		case OpAddressingMode::IndexIndirect: // IDX
 			pointer = Read8(PC + 1);
-			addr = (mem[(pointer + 1 + X) & 0xff] << 8) | mem[(pointer + X) & 0xff];
-			oprand = &mem[addr];
+			opd_addr = (mem[(pointer + 1 + X) & 0xff] << 8) | mem[(pointer + X) & 0xff];
+			tempOprand = Read8(opd_addr);
+			operand = &tempOprand;
 			break;
 
 		case OpAddressingMode::IndirectIndex: // IDY
 			pointer = Read8(PC + 1);
-			addr = Read8(pointer) | Read8((pointer + 1) & 0xff) << 0x08;
-			if( ((addr + Y) & 0xff00) != (addr & 0xff00) ) crossed_page = true;
-			addr += Y;
-			oprand = &mem[addr];
+			opd_addr = Read8(pointer) | Read8((pointer + 1) & 0xff) << 0x08;
+			if( ((opd_addr + Y) & 0xff00) != (opd_addr & 0xff00) ) crossed_page = true;
+			opd_addr += Y;
+			tempOprand = Read8(opd_addr);
+			operand = &tempOprand;
 			break;
 
 		case OpAddressingMode::ZeroPage:
-			addr = Read8(PC + 1);
-			oprand = &mem[addr];
+			opd_addr = Read8(PC + 1);
+			tempOprand = Read8(opd_addr);
+			operand = &tempOprand;
 			break;
 
 		case OpAddressingMode::ZeroPageX:
-			addr = (Read8(PC + 1) + X) & 0xff;
-			oprand = &mem[addr];
+			opd_addr = (Read8(PC + 1) + X) & 0xff;
+			tempOprand = Read8(opd_addr);
+			operand = &tempOprand;
 			break;
 
 		case OpAddressingMode::ZeroPageY:
-			addr = (Read8(PC + 1) + Y) & 0xff;
-			oprand = &mem[addr];
+			opd_addr = (Read8(PC + 1) + Y) & 0xff;
+			tempOprand = Read8(opd_addr);
+			operand = &tempOprand;
 			break;
 
 		case OpAddressingMode::Indirect: // JMP专用
 		default:
-			oprand = nullptr;
+			operand = nullptr;
 			break;
 	}
 }
@@ -385,9 +396,10 @@ uint8_t CPU::Execute() {
 	uint16_t updated_pc = PC + optable[op_code]->bytes;
 
 	// 译码
-	uint8_t *operand = nullptr;
+	const uint8_t *operand = nullptr;
+	uint16_t opd_addr = 0xFFFF; // 默认值0xFFFF
 	bool crossed_page = false;
-	FetchOperands(optable[op_code]->addressing_mode, operand, crossed_page);
+	FetchOperands(optable[op_code]->addressing_mode, opd_addr, operand, crossed_page);
 
 	// 执行
 	uint8_t cycle = ExeFunc(optable[op_code], this, operand, updated_pc, crossed_page);

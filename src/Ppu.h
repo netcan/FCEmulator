@@ -27,6 +27,7 @@ private:
 
 		if(addr >= 0x3f00 && addr < 0x4000 && (addr & 0x1f) % 4 == 0)
 			ret = &Palette[0x00];
+
 		return *ret;
 	}
 
