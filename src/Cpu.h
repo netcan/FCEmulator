@@ -9,10 +9,10 @@
 #include "Base.h"
 #include "Ppu.h"
 
-#define OpExeFuncArgs const Operation& self, CPU *cpu, const uint8_t *operand, uint16_t& updated_pc, bool &crossed_page
+#define OpExeFuncArgs const Operation& self, CPU *cpu, uint16_t opd_addr, const uint8_t *operand, uint16_t& updated_pc, bool &crossed_page
 #define OpExeFuncDecl(func_name) static uint8_t func_name(OpExeFuncArgs)
 #define OpExeFuncDefine(func_name) uint8_t CPU::func_name(OpExeFuncArgs)
-#define ExeFunc(op_code_entity, cpu, oprand, updated_pc, crossed_page) op_code_entity->exe(*op_code_entity, cpu, operand, updated_pc, crossed_page)
+#define ExeFunc(op_code_entity, cpu, opt_addr, oprand, updated_pc, crossed_page) op_code_entity->exe(*op_code_entity, cpu, opd_addr, operand, updated_pc, crossed_page)
 inline bool Sign(uint8_t x) { return GetBit(x, 7); };
 
 //class ProcessorStatus;

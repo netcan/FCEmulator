@@ -402,7 +402,7 @@ uint8_t CPU::Execute() {
 	FetchOperands(optable[op_code]->addressing_mode, opd_addr, operand, crossed_page);
 
 	// 执行
-	uint8_t cycle = ExeFunc(optable[op_code], this, operand, updated_pc, crossed_page);
+	uint8_t cycle = ExeFunc(optable[op_code], this, opd_addr, operand, updated_pc, crossed_page);
 
 	// 更新PC
 	PC = updated_pc;
@@ -427,14 +427,18 @@ uint8_t CPU::Execute() {
 					cpu->P.Zero = cpu->R == 0; \
 					return FixCycle;
 
-#define OpRMProc(R, op) cpu->R op *operand; \
+// OpRMProc这个版本需要修改操作数的值，由于*operand是只读的，所以只能传个修改后的临时值
+#define OpRMProc(R, op, value) cpu->R op value; \
 						cpu->P.Negative = Sign(cpu->R); \
 						cpu->P.Zero = cpu->R == 0;
 
-#define TRNS(T,F)   T = F; \
+#define TRNS(T, F)  T = F; \
 					cpu->P.Negative = Sign(T); \
 					cpu->P.Zero = T == 0; \
 					return self.cycles;
+
+#define UpdateMorA(value)   if(operand) cpu->Write(opd_addr, value); \
+							else cpu->A = value;
 
 OpExeFuncDefine(OP_ASL) {
 	/**
@@ -447,7 +451,8 @@ OpExeFuncDefine(OP_ASL) {
 	 * setting the carry if the result will not fit in 8 bits.
 	 **/
 	uint16_t result = MorA << 1;
-	MorA <<= 1;
+//	MorA <<= 1;
+	UpdateMorA(result);
 
 	cpu->P.Zero = ((result & 0xff) == 0);
 	cpu->P.Carry = GetBit(result, 0x8);
@@ -570,7 +575,8 @@ OpExeFuncDefine(OP_LSR) {
 	cpu->P.Carry = GetBit(MorA, 0x0);
 	cpu->P.Zero = result == 0;
 	cpu->P.Negative = false;
-	MorA = result;
+//	MorA = result;
+	UpdateMorA(result);
 
 	return self.cycles;
 }
@@ -597,7 +603,8 @@ OpExeFuncDefine(OP_ROL) {
 	cpu->P.Carry = GetBit(MorA, 0x7);
 	cpu->P.Zero = result == 0;
 	cpu->P.Negative = Sign(result);
-	MorA = result;
+//	MorA = result;
+	UpdateMorA(result);
 
 	return self.cycles;
 }
@@ -613,7 +620,8 @@ OpExeFuncDefine(OP_ROR) {
 	cpu->P.Carry = GetBit(MorA, 0);
 	cpu->P.Zero = result == 0;
 	cpu->P.Negative = Sign(result);
-	MorA = result;
+//	MorA = result;
+	UpdateMorA(result);
 
 	return self.cycles;
 }
@@ -1077,7 +1085,8 @@ OpExeFuncDefine(OP_STA) {
 	 * Stores the contents of the accumulator into memory.
 	 **/
 
-	*operand = cpu->A;
+//	*operand = cpu->A;
+	cpu->Write(opd_addr, cpu->A);
 	return self.cycles;
 }
 
@@ -1088,7 +1097,8 @@ OpExeFuncDefine(OP_STX) {
 	 * Stores the contents of the X register into memory.
 	 **/
 
-	*operand = cpu->X;
+//	*operand = cpu->X;
+	cpu->Write(opd_addr, cpu->X);
 	return self.cycles;
 }
 
@@ -1099,7 +1109,8 @@ OpExeFuncDefine(OP_STY) {
 	 * Stores the contents of the Y register into memory.
 	 **/
 
-	*operand = cpu->Y;
+//	*operand = cpu->Y;
+	cpu->Write(opd_addr, cpu->Y);
 	return self.cycles;
 }
 
@@ -1111,9 +1122,11 @@ OpExeFuncDefine(OP_DEC) {
 	 * setting the zero and negative flags as appropriate.
 	 **/
 
-	--*operand;
-	cpu->P.Zero = *operand == 0;
-	cpu->P.Negative = Sign(*operand);
+	uint8_t result = *operand - 1;
+	UpdateMorA(result);
+//	--*operand;
+	cpu->P.Zero = result == 0;
+	cpu->P.Negative = Sign(result);
 
 	return self.cycles;
 }
@@ -1125,9 +1138,11 @@ OpExeFuncDefine(OP_INC) {
 	 * Adds one to the value held at a specified memory location setting
 	 * the zero and negative flags as appropriate.
 	 **/
-	++*operand;
-	cpu->P.Zero = *operand == 0;
-	cpu->P.Negative = Sign(*operand);
+	uint8_t result = *operand + 1;
+//	++*operand;
+	UpdateMorA(result);
+	cpu->P.Zero = result == 0;
+	cpu->P.Negative = Sign(result);
 
 	return self.cycles;
 }
@@ -1273,7 +1288,8 @@ OpExeFuncDefine(OP_AAX) {
 	 * (SAX) AXS ANDs the contents of the A and X registers (without changing the contents of either register)
 	 * and stores the result in memory. AXS does not affect any flags in the processor status register.
 	 */
-	*operand = cpu->X & cpu->A;
+//	*operand = cpu->X & cpu->A;
+	cpu->Write(opd_addr, cpu->X & cpu->A);
 	return self.cycles;
 }
 
@@ -1294,10 +1310,12 @@ OpExeFuncDefine(OP_DCP) {
 	 * Subtract 1 from memory (without borrow).
 	 * Status flags: C,Z,N
 	 **/
-	--*operand;
-	cpu->P.Carry = cpu->A >= *operand;
-	cpu->P.Zero = cpu->A == *operand;
-	cpu->P.Negative = Sign(cpu->A - *operand);
+//	--*operand;
+	uint8_t result = *operand - 1;
+	cpu->Write(opd_addr, result);
+	cpu->P.Carry = cpu->A >= result;
+	cpu->P.Zero = cpu->A == result;
+	cpu->P.Negative = Sign(cpu->A - result);
 
 	return self.cycles;
 }
@@ -1308,9 +1326,10 @@ OpExeFuncDefine(OP_ISC) {
 	 * Increase memory by one, then subtract memory from accu-mulator (with
 	 * borrow). Status flags: N,V,Z,C
 	 **/
-	++*operand;
+//	++*operand;
+	cpu->Write(opd_addr, *operand + 1);
 
-	auto tmpOperand = uint8_t(~*operand); // 将tmpOperand取-(*operand+1)
+	auto tmpOperand = uint8_t(~(*operand + 1)); // 将tmpOperand取-(*operand+1)
 	uint16_t result = uint16_t(cpu->A) + uint16_t(tmpOperand) + cpu->P.Carry;
 	cpu->P.Overflow = GetBit(result, 0x8) ^
 	                  GetBit( (cpu->A & uint8_t(0x7f)) + (tmpOperand & uint8_t(0x7f)) + cpu->P.Carry, 0x7); // for signed number
@@ -1330,8 +1349,9 @@ OpExeFuncDefine(OP_RLA) {
 	 **/
 	auto result = uint8_t(*operand << 1) | cpu->P.Carry;
 	cpu->P.Carry = GetBit(*operand, 0x7);
-	*operand = result;
-	OpRMProc(A, &=);
+//	*operand = result;
+	cpu->Write(opd_addr, result);
+	OpRMProc(A, &=, result);
 
 	return self.cycles;
 }
@@ -1342,13 +1362,15 @@ OpExeFuncDefine(OP_RRA) {
 	 * Rotate one bit right in memory, then add memory to accumulator (with
 	 * carry).
 	 **/
-	uint16_t result = uint8_t(*operand >> 1) | (cpu->P.Carry) << 0x7;
+	// ROR
+	auto tmpOpd = uint8_t(*operand >> 1) | (cpu->P.Carry) << 0x7;
 	cpu->P.Carry = GetBit(*operand, 0);
-	*operand = result;
+	cpu->Write(opd_addr, tmpOpd);
 
-	result = uint16_t(cpu->A) + uint16_t(*operand) + cpu->P.Carry;
+	// ADC
+	uint16_t result = uint16_t(cpu->A) + uint16_t(tmpOpd) + cpu->P.Carry;
 	cpu->P.Overflow = GetBit(result, 0x8) ^
-	                  GetBit( (cpu->A & uint8_t(0x7f)) + (*operand & uint8_t(0x7f)) + cpu->P.Carry, 0x7); // for signed number
+	                  GetBit( (cpu->A & uint8_t(0x7f)) + (tmpOpd & uint8_t(0x7f)) + cpu->P.Carry, 0x7); // for signed number
 	cpu->P.Carry = GetBit(result, 0x8); // for usigned number
 	cpu->P.Zero = (result & 0xff) == 0;
 	cpu->P.Negative = Sign(uint8_t(result));
@@ -1365,8 +1387,9 @@ OpExeFuncDefine(OP_SLO) {
 	 * A,Z,C,N
 	 **/
 	cpu->P.Carry = Sign(*operand);
-	*operand <<= 1;
-	OpRMProc(A, |=);
+//	*operand <<= 1;
+	cpu->Write(opd_addr, *operand << 1);
+	OpRMProc(A, |=, *operand << 1);
 
 	return self.cycles;
 }
@@ -1379,8 +1402,9 @@ OpExeFuncDefine(OP_SRE) {
 	 **/
 	auto result = uint8_t(*operand >> 1);
 	cpu->P.Carry = GetBit(*operand, 0x0);
-	*operand = result;
-	OpRMProc(A, ^=);
+//	*operand = result;
+	cpu->Write(opd_addr, result);
+	OpRMProc(A, ^=, result);
 
 	return self.cycles;
 }
