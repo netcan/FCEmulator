@@ -382,8 +382,8 @@ uint8_t CPU::Interrupt(uint16_t vec_addr) {
 }
 
 void CPU::ShowStatus() {
-	printf("PC: %X A:%X X:%X Y:%X P:%X SP:%X CYC:%d\n",
-	       PC, A, X, Y, P.P, SP, cycles
+	printf("PC: %X A:%X X:%X Y:%X P:%X SP:%X CYC:%d(%d)\n",
+	       PC, A, X, Y, P.P, SP, cycles, ppu->cycles
 	);
 }
 
@@ -411,6 +411,21 @@ uint8_t CPU::Execute() {
 	return cycle;
 }
 
+uint8_t CPU::Read8(uint16_t addr) const {
+	uint8_t ret = mem[addr];
+	// side effect
+	switch (addr) {
+		case 0x2002: // PPUCTRL
+			ppu->PPUCTRL.V = 0;
+	}
+
+	return ret;
+}
+
+void CPU::Write(uint16_t addr, uint8_t value) {
+	mem[addr] = value;
+}
+
 // 参考手册： http://obelisk.me.uk/6502/reference.html
 /**************** 指令实现区Begin ****************/
 #define MorA (operand ? *operand:cpu->A)
@@ -422,9 +437,7 @@ uint8_t CPU::Execute() {
 								return self.cycles;
 
 #define FixCycle self.cycles + crossed_page;
-#define OpRM(R, op) cpu->R op *operand; \
-					cpu->P.Negative = Sign(cpu->R); \
-					cpu->P.Zero = cpu->R == 0; \
+#define OpRM(R, op) OpRMProc(R, op, *operand); \
 					return FixCycle;
 
 // OpRMProc这个版本需要修改操作数的值，由于*operand是只读的，所以只能传个修改后的临时值

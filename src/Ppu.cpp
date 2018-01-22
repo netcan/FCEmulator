@@ -48,6 +48,14 @@ PPU::PPU() {
 	screen_height = 240;
 	cycles = 0;
 
+	// power up status
+	odd_frame = false;
+	PPUCTRL.ctrl = PPUMASK.mask = PPUSTATUS.status = 0;
+	OAMADDR = 0;
+	v.addr = t.addr = fineX = w = 0;
+	PPUSCROLL = PPUADDR = 0;
+
+
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't initialize SDL: %s", SDL_GetError());
 		exit(-1);
@@ -138,6 +146,8 @@ void PPU::showPatternTable() {
 
 void PPU::Execute(uint8_t cpu_cycles) {
 	uint8_t remain_cycles = 3 * cpu_cycles;
-	cycles = (cycles + remain_cycles) % frame_height * frame_width;
+	cycles = (cycles + remain_cycles) % (frame_height * frame_width);
 
+	scanline = cycles / frame_width;
+	dot = cycles % frame_width;
 }

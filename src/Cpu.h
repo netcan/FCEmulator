@@ -130,13 +130,16 @@ public:
 	friend struct Operation;
 
 	CPU() : P(0x34), A(0), X(0), Y(0), SP(0xfd), cycles(0) { }; // Power Up
-	CPU(PPU &ppu) : CPU() { mem.PPURegisterMapping(ppu); }
+	CPU(PPU &ppu) : CPU() {
+		this->ppu = &ppu;
+		mem.PPURegisterMapping(ppu);
+	}
 	// 读取一个字节
-	inline uint8_t Read8(uint16_t addr) const { return mem[addr]; }
+	uint8_t Read8(uint16_t addr) const;
 	// 读取一个字
 	inline uint16_t Read16(uint16_t addr) const { return (mem[addr + 1] << 8) | mem[addr]; }
 	// 写一个字节
-	inline void Write(uint16_t addr, uint8_t value) { mem[addr] = value; }
+	void Write(uint16_t addr, uint8_t value);
 	// 入栈
 	inline void Push(uint8_t value) { mem[0x100 | (SP--)] = value; }
 	// 出栈
@@ -164,6 +167,7 @@ private:
 	ProcessorStatus P; // 状态寄存器
 	__CPUMem__ mem;
 	uint32_t cycles; // 累计执行周期
+	PPU *ppu; // 控制PPU
 	static const Operation** InitOptable();
 	static const Operation **optable;
 

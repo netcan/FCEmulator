@@ -9,11 +9,11 @@
 #include "Famicom.h"
 
 void Famicom::Run() {
-	uint8_t cycles; // based on cpu
+	uint8_t cpu_cycles; // based on cpu
 	while(runing) {
 		cpu.ShowStatus();
-		cycles = cpu.Execute();
-		ppu.Execute(cycles);
+		cpu_cycles = cpu.Execute();
+		ppu.Execute(cpu_cycles);
 
 	}
 

@@ -102,9 +102,23 @@ private:
 		uint8_t status;
 	} PPUSTATUS;
 
+	union {
+		struct {
+			unsigned coarseX: 5; // 确定nametable块的X
+			unsigned coarseY: 5; // 确定nametable块的Y
+			unsigned NN: 2;      // nametable
+			unsigned fineY: 3;   // 8x8块中的Y行
+		};
+		uint16_t addr;
+	} v, t;         // current vram addr, temporary vram addr
+	uint8_t fineX;  // 8x8块中的X列
+	bool w;         // First or second write toggle
+	bool odd_frame; // 奇偶帧
+
 	uint8_t OAMADDR, OAMDATA, PPUSCROLL,
 			PPUADDR, PPUDATA, OAMDMA;
 	uint32_t cycles; // PPU的时钟周期数，是cpu的三倍
+	uint16_t scanline, dot;
 
 	static const SDL_Color palette[0x40];
 
@@ -113,13 +127,12 @@ private:
 	SDL_Texture *texture;
 	SDL_Event event;
 
-	size_t screen_width, screen_height;
-	const size_t frame_width = 341, frame_height = 262; // NTSC, 60fps
+	uint16_t screen_width, screen_height;
+	const uint16_t frame_width = 341, frame_height = 262; // NTSC, 60fps
 public:
 	friend class __CPUMem__;
+	friend class CPU;
 	friend class Cartridge;
-	// 读取一个字节
-	inline uint8_t Read8(uint16_t addr) const { return mem[addr]; }
 	PPU();
 	~PPU();
 	void showPalette();
@@ -136,6 +149,7 @@ public:
 	uint8_t getPPUADDR() const { return PPUADDR; }
 	uint8_t getPPUDATA() const { return PPUDATA; }
 	uint8_t getOAMDMA() const { return OAMDMA; }
+	const __PPUMem__& getPPUMEM() const { return mem; }
 
 };
 

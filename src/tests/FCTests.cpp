@@ -94,9 +94,9 @@ TEST(CartridgeTest, test_loading_romfile) {
 	EXPECT_EQ(cpu.Read8(0xCBAF), 0xa0);
 	EXPECT_EQ(cpu.Read8(0xF87C), 0x60);
 
-	EXPECT_EQ(ppu.Read8(0x0020), 0x80);
-	EXPECT_EQ(ppu.Read8(0x0022), 0xff);
-	EXPECT_EQ(ppu.Read8(0x07bf), 0x3c);
+	EXPECT_EQ(ppu.getPPUMEM()[0x0020], 0x80);
+	EXPECT_EQ(ppu.getPPUMEM()[0x0022], 0xff);
+	EXPECT_EQ(ppu.getPPUMEM()[0x07bf], 0x3c);
 	EXPECT_TRUE(cart.PrintHeader());
 }
 

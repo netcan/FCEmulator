@@ -12,7 +12,7 @@
 
 class Famicom {
 public:
-	Famicom(const std::string & RomFileName) {
+	Famicom(const std::string & RomFileName): cpu(ppu) {
 		runing = cart.LoadRomFile(cpu, ppu, RomFileName);
 		cpu.Reset();
 	}
