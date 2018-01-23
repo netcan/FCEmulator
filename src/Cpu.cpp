@@ -6,8 +6,22 @@
  > Created Time: 2017-12-03 -- 20:31
  ****************************************************************************/
 #include "Cpu.h"
+#include "Ppu.h"
 
 ProcessorStatus::ProcessorStatus(uint8_t value): P(value) {}
+
+
+void __CPUMem__::PPURegisterMapping(PPU &ppu) {
+	PPURegister[0x00] = &ppu.PPUCTRL.ctrl;   // 0x2000, Write
+	PPURegister[0x01] = &ppu.PPUMASK.mask;   // 0x2001, Write
+	PPURegister[0x02] = &ppu.PPUSTATUS.status; // 0x2002, Read
+	PPURegister[0x03] = &ppu.OAMADDR;   // 0x2003, Write
+	PPURegister[0x04] = &ppu.OAMDATA;   // 0x2004, Read/Write
+	PPURegister[0x05] = &ppu.PPUSCROLL; // 0x2005, Write twice for x and y
+	PPURegister[0x06] = &ppu.PPUADDR;   // 0x2006, Write twice for upper and lower address
+	PPURegister[0x07] = &ppu.PPUDATA;   // 0x2007, Read/Write, read buffer(post-fetch)
+	IORegister[0x14] = &ppu.OAMDMA;    // 0x4014, Write
+}
 
 
 const Operation **CPU::optable = CPU::InitOptable();
@@ -382,14 +396,20 @@ uint8_t CPU::Interrupt(uint16_t vec_addr) {
 }
 
 void CPU::ShowStatus() {
-	printf("PC: %X A:%X X:%X Y:%X P:%X SP:%X CYC:%d(%d)\n",
-	       PC, A, X, Y, P.P, SP, cycles, ppu->cycles
+	printf("PC: %X(%X) A:%X X:%X Y:%X P:%X SP:%X CYC:%d(%d)\n",
+	       PC, mem[PC], A, X, Y, P.P, SP, cycles, ppu->cycles
 	);
 }
 
 uint8_t CPU::Execute() {
 	// 执行一条指令，返回执行周期数
 	// 取指->译码->执行->更新PC->...
+
+	// 中断
+	if(nmi) {
+		nmi = false;
+		return Interrupt(static_cast<uint16_t >(InterruptVector::NMI));
+	}
 
 	// 取指
 	uint8_t op_code = Read8(PC);
@@ -415,8 +435,8 @@ uint8_t CPU::Read8(uint16_t addr) const {
 	uint8_t ret = mem[addr];
 	// side effect
 	switch (addr) {
-		case 0x2002: // PPUCTRL
-			ppu->PPUCTRL.V = 0;
+		case 0x2002: // PPUSTATUS
+			ppu->PPUSTATUS.V = 0;
 	}
 
 	return ret;

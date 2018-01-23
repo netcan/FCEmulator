@@ -7,7 +7,6 @@
  ****************************************************************************/
 #pragma once
 #include "Base.h"
-#include "Ppu.h"
 
 #define OpExeFuncArgs const Operation& self, CPU *cpu, uint16_t opd_addr, const uint8_t *operand, uint16_t& updated_pc, bool &crossed_page
 #define OpExeFuncDecl(func_name) static uint8_t func_name(OpExeFuncArgs)
@@ -54,6 +53,8 @@ inline bool Sign(uint8_t x) { return GetBit(x, 7); };
 //private:
 //	uint8_t P;
 //};
+
+class PPU;
 
 union ProcessorStatus {
 	ProcessorStatus(uint8_t value = 0x34);
@@ -109,17 +110,7 @@ public:
 	iterator begin() { return iterator(this, 0); }
 	iterator end() { return iterator(this, 0x10000); }
 
-	void PPURegisterMapping(PPU &ppu) {
-		PPURegister[0x00] = &ppu.PPUCTRL.ctrl;   // 0x2000, Write
-		PPURegister[0x01] = &ppu.PPUMASK.mask;   // 0x2001, Write
-		PPURegister[0x02] = &ppu.PPUSTATUS.status; // 0x2002, Read
-		PPURegister[0x03] = &ppu.OAMADDR;   // 0x2003, Write
-		PPURegister[0x04] = &ppu.OAMDATA;   // 0x2004, Read/Write
-		PPURegister[0x05] = &ppu.PPUSCROLL; // 0x2005, Write twice for x and y
-		PPURegister[0x06] = &ppu.PPUADDR;   // 0x2006, Write twice for upper and lower address
-		PPURegister[0x07] = &ppu.PPUDATA;   // 0x2007, Read/Write, read buffer(post-fetch)
-		 IORegister[0x14] = &ppu.OAMDMA;    // 0x4014, Write
-	}
+	void PPURegisterMapping(PPU &ppu);
 };
 
 struct Operation;
@@ -128,12 +119,10 @@ class CPU {
 public:
 	friend class Cartridge;
 	friend struct Operation;
+	friend class PPU;
 
-	CPU() : P(0x34), A(0), X(0), Y(0), SP(0xfd), cycles(0) { }; // Power Up
-	CPU(PPU &ppu) : CPU() {
-		this->ppu = &ppu;
-		mem.PPURegisterMapping(ppu);
-	}
+	CPU() : P(0x34), A(0), X(0), Y(0), SP(0xfd), cycles(0), nmi(false), irq(false) { }; // Power Up
+	inline void connectTo(PPU &ppu) { this->ppu = &ppu; mem.PPURegisterMapping(ppu); }
 	// 读取一个字节
 	uint8_t Read8(uint16_t addr) const;
 	// 读取一个字
@@ -168,6 +157,7 @@ private:
 	__CPUMem__ mem;
 	uint32_t cycles; // 累计执行周期
 	PPU *ppu; // 控制PPU
+	bool nmi, irq;
 	static const Operation** InitOptable();
 	static const Operation **optable;
 

@@ -653,7 +653,8 @@ TEST(CPUTest, opTest) {
 
 TEST(CPUTest, mappingTest) { // 测试IO寄存器的映射状态
 	PPU ppu;
-	CPU cpu(ppu);
+	CPU cpu;
+	cpu.connectTo(ppu);
 	for(auto addr = 0x2000; addr < 0x2008; ++addr)
 		cpu.Write(addr, 0x3c);
 	cpu.Write(0x4014, 0x3c);
@@ -671,7 +672,8 @@ TEST(CPUTest, mappingTest) { // 测试IO寄存器的映射状态
 
 TEST(CPUTest, romTest) {
 	PPU ppu;
-	CPU cpu(ppu);
+	CPU cpu;
+	cpu.connectTo(ppu);
 
 	Cartridge cart;
 	uint8_t &X = cpu.getX(), &Y = cpu.getY(),
@@ -799,7 +801,8 @@ TEST(PPUTest, test_palette) {
 
 TEST(PPUTest, test_pattern_table) {
 	PPU ppu;
-	CPU cpu(ppu);
+	CPU cpu;
+	cpu.connectTo(ppu);
 	Cartridge cart;
 //	EXPECT_TRUE(cart.LoadRomFile(cpu, ppu, "./Super Mario Bros (E).nes"));
 	EXPECT_TRUE(cart.LoadRomFile(cpu, ppu, "./nestest.nes"));

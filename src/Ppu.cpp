@@ -7,6 +7,7 @@
  ****************************************************************************/
 
 #include "Ppu.h"
+#include "Cpu.h"
 
 const SDL_Color PPU::palette[] = {
 		{0x75, 0x75, 0x75, 0x00 }, {0x27, 0x1B, 0x8F, 0x00 },
@@ -44,6 +45,7 @@ const SDL_Color PPU::palette[] = {
 };
 
 PPU::PPU() {
+
 	screen_width = 256;
 	screen_height = 240;
 	cycles = 0;
@@ -144,10 +146,25 @@ void PPU::showPatternTable() {
 		SDL_PollEvent(&event);
 }
 
+void PPU::step() {
+	uint16_t    scanline = cycles / frame_width,
+				dot = cycles % frame_width;
+	if(scanline >= 0 && scanline < 240) { // Visable frame
+
+	}
+	if(scanline == 241 && dot == 1) { // set VBlank flag
+		PPUSTATUS.V = 1;
+		if(PPUCTRL.V) cpu->nmi = true;
+	} else if(scanline == 261) { // Pre-render line
+		if(dot == 1) PPUSTATUS.V = 0;
+	}
+
+
+	cycles = (cycles + 1) % (frame_width * frame_height);
+}
+
 void PPU::Execute(uint8_t cpu_cycles) {
 	uint8_t remain_cycles = 3 * cpu_cycles;
-	cycles = (cycles + remain_cycles) % (frame_height * frame_width);
+	for(; remain_cycles; --remain_cycles) step();
 
-	scanline = cycles / frame_width;
-	dot = cycles % frame_width;
 }

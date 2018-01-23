@@ -9,7 +9,7 @@
 #include "Base.h"
 #include <SDL2/SDL.h>
 
-
+class CPU;
 class __PPUMem__ {
 private:
 	uint8_t VRAM[0x800];                // 2KB，存放2个NameTable
@@ -118,7 +118,6 @@ private:
 	uint8_t OAMADDR, OAMDATA, PPUSCROLL,
 			PPUADDR, PPUDATA, OAMDMA;
 	uint32_t cycles; // PPU的时钟周期数，是cpu的三倍
-	uint16_t scanline, dot;
 
 	static const SDL_Color palette[0x40];
 
@@ -129,16 +128,21 @@ private:
 
 	uint16_t screen_width, screen_height;
 	const uint16_t frame_width = 341, frame_height = 262; // NTSC, 60fps
+	CPU *cpu;
+
+	void step();    // 执行一个ppu周期
 public:
 	friend class __CPUMem__;
 	friend class CPU;
 	friend class Cartridge;
 	PPU();
 	~PPU();
+	inline void connectTo(CPU &cpu) { this->cpu = &cpu; }
+
 	void showPalette();
 	void showPatternTable();
 
-	void Execute(uint8_t cycle); // 执行cycle个周期，这里的cycle是cpu返回的周期，需要*3
+	void Execute(uint8_t cpu_cycles); // 执行cycle个周期，这里的cycle是cpu返回的周期，需要*3
 
 	uint8_t getPPUCTRL() const { return PPUCTRL.ctrl; }
 	uint8_t getPPUMASK() const { return PPUMASK.mask; }

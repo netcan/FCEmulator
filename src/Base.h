@@ -6,7 +6,6 @@
  > Created Time: 2017-12-05 -- 21:51
  ****************************************************************************/
 #pragma once
-
 #include <cstdint>
 #include <string>
 #include <cstdio>
