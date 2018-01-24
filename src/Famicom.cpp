@@ -10,10 +10,12 @@
 
 void Famicom::Run() {
 	uint8_t cpu_cycles; // based on cpu
-	while(runing) {
-		cpu.ShowStatus();
+	cart.PrintHeader();
+	while(runing && ppu.event.type != SDL_QUIT) {
+//		cpu.ShowStatus();
 		cpu_cycles = cpu.Execute();
 		ppu.Execute(cpu_cycles);
+		SDL_PollEvent(&ppu.event);
 
 	}
 

@@ -120,6 +120,7 @@ public:
 	friend class Cartridge;
 	friend struct Operation;
 	friend class PPU;
+	friend class Famicom;
 
 	CPU() : P(0x34), A(0), X(0), Y(0), SP(0xfd), cycles(0), nmi(false), irq(false) { }; // Power Up
 	inline void connectTo(PPU &ppu) { this->ppu = &ppu; mem.PPURegisterMapping(ppu); }

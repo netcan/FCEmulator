@@ -70,6 +70,7 @@ PPU::PPU() {
 							  SDL_WINDOW_SHOWN);
 	renderer = SDL_CreateRenderer(window, -1, 0);
 	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, screen_width, screen_height);
+	SDL_SetRenderTarget(renderer, texture);
 }
 
 PPU::~PPU() {
@@ -146,25 +147,126 @@ void PPU::showPatternTable() {
 		SDL_PollEvent(&event);
 }
 
+void PPU::pixel(unsigned x, unsigned y) {
+	uint8_t draw_palette;
+
+	if(y < 240 && x >= 0 && x < 256) {
+		if (PPUMASK.b && !(!PPUMASK.m && x < 8)) {
+			draw_palette = GetBit(bgShiftH, 15 - fineX) << 1 |
+			               GetBit(bgShiftL, 15 - fineX);
+			if (draw_palette)
+				draw_palette |= (GetBit(atShiftH, 7 - fineX) << 1 |
+				                 GetBit(atShiftL, 7 - fineX)) << 2;
+		}
+
+
+		const SDL_Color &color = palette[mem[0x3F00 + (rendering() ? draw_palette : 0)]];
+		SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+		SDL_RenderDrawPoint(renderer, x, y);
+	}
+
+	bgShiftL <<= 1; bgShiftH <<= 1;
+	atShiftL = (atShiftL << 1) | atL;
+	atShiftH = (atShiftH << 1) | atH;
+}
+
+void PPU::reload_shift() {
+	bgShiftL = (bgShiftL & 0xFF00) | bgL;
+	bgShiftH = (bgShiftH & 0xFF00) | bgH;
+
+	atL= (at & 1);
+	atH = (at & 2);
+}
+
+void PPU::h_scroll() {
+	if(! rendering()) return;
+	if (v.coarseX == 31) {      // if coarse X == 31
+		v.coarseX = 0;          // coarse X = 0
+		v.NN ^= 0x1;             // switch horizontal nametable
+	} else ++v.coarseX;      // increment coarse X
+}
+
+void PPU::v_scroll() {
+	if(! rendering()) return;
+	if(v.fineY < 7) ++v.fineY;
+	else {
+		v.fineY = 0;
+		if(v.coarseY == 29) { v.coarseY = 0; v.NN ^= 0x2; }
+		else if(v.coarseY == 31) v.coarseY = 0;
+		else ++v.coarseY;
+	}
+}
+
+void PPU::h_update() {
+	if(! rendering()) return;
+	v.addr = (v.addr & ~0x041F) | (t.addr & 0x041F);
+}
+
+void PPU::v_update() {
+	if(! rendering()) return;
+	v.addr = (v.addr & ~0x7BE0) | (t.addr & 0x7BE0);
+}
+
 void PPU::step() {
 	uint16_t    scanline = cycles / frame_width,
 				dot = cycles % frame_width;
-	if(scanline >= 0 && scanline < 240) { // Visable frame
+	uint16_t addr;
 
+	if( (scanline >= 0 && scanline < 240) || scanline == 261) { // Visable frame or Pre-render line(dummy scanline)
+
+		// 背景
+		switch (dot) {
+			case 2 ... 255: case 322 ... 337:
+				pixel(dot - 2, scanline);
+				switch (dot % 8) {
+					// Nametable:
+					case 1:  addr  = get_nt_addr(); reload_shift(); break;
+					case 2:  nt    = mem[addr];  break;
+					// Attribute:
+					case 3:  addr  = get_at_addr(); break;
+					case 4:  at    = mem[addr]; if (v.coarseY & 2) at >>= 4;
+												if (v.coarseX & 2) at >>= 2; break;
+					// Background (low bits):
+					case 5:  addr  = get_bg_tile_addr(); break;
+					case 6:  bgL   = mem[addr];  break;
+					// Background (high bits):
+					case 7:  addr += 8;         break;
+					case 0:  bgH   = mem[addr]; h_scroll(); break;
+				} break;
+			case         256:  pixel(dot - 2, scanline); bgH = mem[addr]; v_scroll(); break;  // Vertical bump.
+			case         257:  pixel(dot - 2, scanline); reload_shift(); h_update(); break;  // Update horizontal position.
+			case 280 ... 304:  if (scanline == 261)            v_update(); break;  // Update vertical position.
+
+				// No shift reloading:
+			case             1:  addr = get_nt_addr(); if(scanline == 261) PPUSTATUS.V = 0; break;
+			case 321: case 339:  addr = get_nt_addr(); break;
+				// Nametable fetch instead of attribute:
+			case           338:  nt = mem[addr]; break;
+			case           340:  nt = mem[addr]; if(scanline == 261 && rendering() && odd_frame) ++cycles; break;
+		}
 	}
-	if(scanline == 241 && dot == 1) { // set VBlank flag
+	else if(scanline == 240 && dot == 0) { // frame end
+		printf("one frame cpu cycles: %d\n", cpu->cycles);
+		SDL_SetRenderTarget(renderer, NULL);
+		SDL_RenderCopy(renderer, texture, NULL, NULL);
+		SDL_RenderPresent(renderer);
+
+		SDL_SetRenderTarget(renderer, texture);
+		odd_frame = !odd_frame;
+	} else if(scanline == 241 && dot == 1) { // set VBlank flag
 		PPUSTATUS.V = 1;
 		if(PPUCTRL.V) cpu->nmi = true;
-	} else if(scanline == 261) { // Pre-render line
-		if(dot == 1) PPUSTATUS.V = 0;
+	}
+
+	if(++cycles >= (frame_width * frame_height)) {
+		cycles %= (frame_width * frame_height);
+		odd_frame = !odd_frame;
 	}
 
 
-	cycles = (cycles + 1) % (frame_width * frame_height);
+
 }
 
 void PPU::Execute(uint8_t cpu_cycles) {
-	uint8_t remain_cycles = 3 * cpu_cycles;
-	for(; remain_cycles; --remain_cycles) step();
-
+	for(uint8_t remain_cycles = 3 * cpu_cycles; remain_cycles; --remain_cycles) step();
 }

@@ -63,6 +63,7 @@ int main(int argc, char *argv[]) {
 	SDL_RenderCopy(renderer, texture, NULL, NULL);
 	SDL_RenderPresent(renderer);
 
+
 	// 事件处理
 	SDL_Event event;
 	while (event.type != SDL_QUIT)

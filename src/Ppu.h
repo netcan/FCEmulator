@@ -13,7 +13,6 @@ class CPU;
 class __PPUMem__ {
 private:
 	uint8_t VRAM[0x800];                // 2KB，存放2个NameTable
-	uint8_t OAM[0x100];                 // 256B SPR RAM
 	uint8_t PatternTable[2][0x1000];    // 4KB * 2
 	uint8_t *NameTable[4][0x400];       // 1KB * 4
 	uint8_t Palette[0x20];              // 32B
@@ -38,6 +37,7 @@ private:
 	}
 
 public:
+	friend class Famicom;
 	__PPUMem__() { setHorizontalMirroring(); }
 	uint8_t &operator[](uint16_t addr) { return AT(addr); }
 	const uint8_t &operator[](uint16_t addr) const { return AT(addr); }
@@ -109,14 +109,25 @@ private:
 			unsigned NN: 2;      // nametable
 			unsigned fineY: 3;   // 8x8块中的Y行
 		};
-		uint16_t addr;
+		struct {
+			unsigned l: 8;
+			unsigned h: 6;
+			unsigned s: 1; // 15位
+		};
+		unsigned addr: 15;
 	} v, t;         // current vram addr, temporary vram addr
 	uint8_t fineX;  // 8x8块中的X列
 	bool w;         // First or second write toggle
 	bool odd_frame; // 奇偶帧
+	uint16_t bgShiftL, bgShiftH;
+	uint8_t bgL, bgH, nt, at;   // nt存放的是pattern table的index
+	uint8_t atShiftL, atShiftH;
+	bool atL, atH;
 
 	uint8_t OAMADDR, OAMDATA, PPUSCROLL,
 			PPUADDR, PPUDATA, OAMDMA;
+	uint8_t PPUDATA_buffer;
+	uint8_t OAM[0x100];                 // 256B SPR RAM
 	uint32_t cycles; // PPU的时钟周期数，是cpu的三倍
 
 	static const SDL_Color palette[0x40];
@@ -135,6 +146,7 @@ public:
 	friend class __CPUMem__;
 	friend class CPU;
 	friend class Cartridge;
+	friend class Famicom;
 	PPU();
 	~PPU();
 	inline void connectTo(CPU &cpu) { this->cpu = &cpu; }
@@ -155,5 +167,15 @@ public:
 	uint8_t getOAMDMA() const { return OAMDMA; }
 	const __PPUMem__& getPPUMEM() const { return mem; }
 
+	void pixel(unsigned x, unsigned y);
+	void reload_shift();
+	void h_scroll();
+	void v_scroll();
+	void h_update();
+	void v_update();
+	inline bool rendering() { return PPUMASK.s || PPUMASK.b; }
+	inline uint16_t get_nt_addr() { return 0x2000 | (v.addr & 0x0FFF); }
+	inline uint16_t get_at_addr() { return 0x23C0 | (v.addr & 0x0C00) | ((v.addr >> 4) & 0x38) | ((v.addr >> 2) & 0x07); }
+	inline uint16_t get_bg_tile_addr() { return PPUCTRL.B * 0x1000 | (nt << 4) | v.fineY; }
 };
 
