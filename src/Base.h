@@ -11,7 +11,7 @@
 #include <cstdio>
 #include <cassert>
 
-inline bool GetBit(uint16_t value, size_t pos) { return static_cast<bool>((value >> pos) & 0x01); } // pos in [0, 16)
+inline bool GetBit(uint16_t value, size_t pos) { return value & (1ul << pos); } // pos in [0, 16)
 inline uint8_t GetUpperBits(uint8_t value) { return (value >> 4) & 0x0f; }
 inline uint8_t GetLowerBits(uint8_t value) { return value & 0x0f; }
 inline uint8_t JointBits(uint8_t upper, uint8_t lower) { return (upper << 4) | (lower & 0x0f); }

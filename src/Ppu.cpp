@@ -80,8 +80,8 @@ void PPU::showPalette() {
 //
 //	SDL_RenderPresent(renderer);
 
-	while(event.type != SDL_QUIT)
-		SDL_PollEvent(&event);
+//	while(event.type != SDL_QUIT)
+//		SDL_PollEvent(&event);
 
 }
 
@@ -124,9 +124,9 @@ void PPU::showPatternTable() {
 //	SDL_SetRenderTarget(renderer, NULL);
 //	SDL_RenderCopy(renderer, texture, &board, NULL);
 
-	SDL_RenderPresent(renderer);
-	while(event.type != SDL_QUIT)
-		SDL_PollEvent(&event);
+//	SDL_RenderPresent(renderer);
+//	while(event.type != SDL_QUIT)
+//		SDL_PollEvent(&event);
 }
 
 void PPU::pixel(unsigned x, unsigned y) {
@@ -155,7 +155,7 @@ void PPU::reload_shift() {
 	bgShiftH = static_cast<uint16_t>((bgShiftH & 0xFF00) | bgH);
 
 	atL= static_cast<bool>(at & 1);
-	atH = static_cast<bool>((at >> 0x01) & 1);
+	atH = static_cast<bool>(at & 2);
 }
 
 void PPU::h_scroll() {
@@ -231,6 +231,10 @@ void PPU::step() {
 		SDL_UpdateTexture(texture, NULL, video_buffer, sizeof(uint32_t) * screen_width);
 		SDL_RenderCopy(renderer, texture, NULL, NULL);
 		SDL_RenderPresent(renderer);
+
+		//@ TODO: 减少SDL_PollEvent()调用频率，效率大大提高
+		SDL_PollEvent(&event);
+
 		odd_frame = !odd_frame;
 		++frames_count;
 	} else if(scanline == 241 && dot == 1) { // set VBlank flag

@@ -18,7 +18,6 @@ void Famicom::Run() {
 //		cpu.ShowStatus();
 		cpu_cycles = cpu.Execute();
 		ppu.Execute(cpu_cycles);
-		SDL_PollEvent(&ppu.event);
 	}
 	printf("%.2lf fps\n", ppu.frames_count * 1.0 / duration_cast<seconds>(high_resolution_clock::now() - t).count());
 

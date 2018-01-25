@@ -13,8 +13,8 @@ configure_file(Super\ Mario\ Bros\ \(E\).nes Super\ Mario\ Bros\ \(E\).nes COPYO
 add_executable(FCtests
         FCTests.cpp)
 add_dependencies(FCtests test.nes)
-target_link_libraries(FCtests gtest gtest_main FC sdl2)
+target_link_libraries(FCtests gtest gtest_main FC SDL2)
 
 add_executable(sdltest
         sdltest.cpp)
-target_link_libraries(sdltest sdl2)
+target_link_libraries(sdltest SDL2)

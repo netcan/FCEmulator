@@ -412,7 +412,7 @@ uint8_t CPU::Execute() {
 	}
 
 	// 取指
-	uint8_t op_code = Read8(PC);
+	uint8_t op_code = mem[PC];
 	uint16_t updated_pc = PC + optable[op_code]->bytes;
 
 	// 译码
