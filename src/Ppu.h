@@ -136,15 +136,16 @@ private:
 	uint8_t OAM[0x100];                 // 256B SPR RAM
 	uint32_t cycles; // PPU的时钟周期数，是cpu的三倍
 
-	static const SDL_Color palette[0x40];
+	static const uint32_t palette[0x40];
 
+	const static uint16_t frame_width = 341, frame_height = 262; // NTSC, 60fps
+	const static uint16_t screen_width = 256, screen_height = 240;
 	SDL_Window *window;
 	SDL_Renderer *renderer;
 	SDL_Texture *texture;
 	SDL_Event event;
+	uint32_t video_buffer[frame_width * frame_height];
 
-	uint16_t screen_width, screen_height;
-	const uint16_t frame_width = 341, frame_height = 262; // NTSC, 60fps
 	CPU *cpu;
 
 	void step();    // 执行一个ppu周期

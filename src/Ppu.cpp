@@ -9,45 +9,18 @@
 #include "Ppu.h"
 #include "Cpu.h"
 
-const SDL_Color PPU::palette[] = {
-		{0x75, 0x75, 0x75, 0x00 }, {0x27, 0x1B, 0x8F, 0x00 },
-		{0x00, 0x00, 0xAB, 0x00 }, {0x47, 0x00, 0x9F, 0x00 },
-		{0x8F, 0x00, 0x77, 0x00 }, {0xAB, 0x00, 0x13, 0x00 },
-		{0xA7, 0x00, 0x00, 0x00 }, {0x7F, 0x0B, 0x00, 0x00 },
-		{0x43, 0x2F, 0x00, 0x00 }, {0x00, 0x47, 0x00, 0x00 },
-		{0x00, 0x51, 0x00, 0x00 }, {0x00, 0x3F, 0x17, 0x00 },
-		{0x1B, 0x3F, 0x5F, 0x00 }, {0x00, 0x00, 0x00, 0x00 },
-		{0x00, 0x00, 0x00, 0x00 }, {0x00, 0x00, 0x00, 0x00 },
-		{0xBC, 0xBC, 0xBC, 0x00 }, {0x00, 0x73, 0xEF, 0x00 },
-		{0x23, 0x3B, 0xEF, 0x00 }, {0x83, 0x00, 0xF3, 0x00 },
-		{0xBF, 0x00, 0xBF, 0x00 }, {0xE7, 0x00, 0x5B, 0x00 },
-		{0xDB, 0x2B, 0x00, 0x00 }, {0xCB, 0x4F, 0x0F, 0x00 },
-		{0x8B, 0x73, 0x00, 0x00 }, {0x00, 0x97, 0x00, 0x00 },
-		{0x00, 0xAB, 0x00, 0x00 }, {0x00, 0x93, 0x3B, 0x00 },
-		{0x00, 0x83, 0x8B, 0x00 }, {0x00, 0x00, 0x00, 0x00 },
-		{0x00, 0x00, 0x00, 0x00 }, {0x00, 0x00, 0x00, 0x00 },
-		{0xFF, 0xFF, 0xFF, 0x00 }, {0x3F, 0xBF, 0xFF, 0x00 },
-		{0x5F, 0x97, 0xFF, 0x00 }, {0xA7, 0x8B, 0xFD, 0x00 },
-		{0xF7, 0x7B, 0xFF, 0x00 }, {0xFF, 0x77, 0xB7, 0x00 },
-		{0xFF, 0x77, 0x63, 0x00 }, {0xFF, 0x9B, 0x3B, 0x00 },
-		{0xF3, 0xBF, 0x3F, 0x00 }, {0x83, 0xD3, 0x13, 0x00 },
-		{0x4F, 0xDF, 0x4B, 0x00 }, {0x58, 0xF8, 0x98, 0x00 },
-		{0x00, 0xEB, 0xDB, 0x00 }, {0x00, 0x00, 0x00, 0x00 },
-		{0x00, 0x00, 0x00, 0x00 }, {0x00, 0x00, 0x00, 0x00 },
-		{0xFF, 0xFF, 0xFF, 0x00 }, {0xAB, 0xE7, 0xFF, 0x00 },
-		{0xC7, 0xD7, 0xFF, 0x00 }, {0xD7, 0xCB, 0xFF, 0x00 },
-		{0xFF, 0xC7, 0xFF, 0x00 }, {0xFF, 0xC7, 0xDB, 0x00 },
-		{0xFF, 0xBF, 0xB3, 0x00 }, {0xFF, 0xDB, 0xAB, 0x00 },
-		{0xFF, 0xE7, 0xA3, 0x00 }, {0xE3, 0xFF, 0xA3, 0x00 },
-		{0xAB, 0xF3, 0xBF, 0x00 }, {0xB3, 0xFF, 0xCF, 0x00 },
-		{0x9F, 0xFF, 0xF3, 0x00 }, {0x00, 0x00, 0x00, 0x00 },
-		{0x00, 0x00, 0x00, 0x00 }, {0x00, 0x00, 0x00, 0x00 }
+const uint32_t PPU::palette[] = {
+		0x757575, 0x271B8F, 0x0000AB, 0x47009F, 0x8F0077, 0xAB0013, 0xA70000, 0x7F0B00,
+		0x432F00, 0x004700, 0x005100, 0x003F17, 0x1B3F5F, 0x000000, 0x000000, 0x000000,
+		0xBCBCBC, 0x0073EF, 0x233BEF, 0x8300F3, 0xBF00BF, 0xE7005B, 0xDB2B00, 0xCB4F0F,
+		0x8B7300, 0x009700, 0x00AB00, 0x00933B, 0x00838B, 0x000000, 0x000000, 0x000000,
+		0xFFFFFF, 0x3FBFFF, 0x5F97FF, 0xA78BFD, 0xF77BFF, 0xFF77B7, 0xFF7763, 0xFF9B3B,
+		0xF3BF3F, 0x83D313, 0x4FDF4B, 0x58F898, 0x00EBDB, 0x000000, 0x000000, 0x000000,
+		0xFFFFFF, 0xABE7FF, 0xC7D7FF, 0xD7CBFF, 0xFFC7FF, 0xFFC7DB, 0xFFBFB3, 0xFFDBAB,
+		0xFFE7A3, 0xE3FFA3, 0xABF3BF, 0xB3FFCF, 0x9FFFF3, 0x000000, 0x000000, 0x000000
 };
 
 PPU::PPU() {
-
-	screen_width = 256;
-	screen_height = 240;
 	cycles = 0;
 
 	// power up status
@@ -65,12 +38,12 @@ PPU::PPU() {
 	}
 
 	window = SDL_CreateWindow("Famicom emulator by netcan",
-							  SDL_WINDOWPOS_UNDEFINED,
-							  SDL_WINDOWPOS_UNDEFINED,
+							  SDL_WINDOWPOS_CENTERED,
+							  SDL_WINDOWPOS_CENTERED,
 							  screen_width * 3, screen_height * 3,
 							  SDL_WINDOW_SHOWN);
-	renderer = SDL_CreateRenderer(window, -1, 0);
-	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, screen_width, screen_height);
+	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, screen_width, screen_height);
 	SDL_SetRenderTarget(renderer, texture);
 }
 
@@ -82,66 +55,74 @@ PPU::~PPU() {
 }
 
 void PPU::showPalette() {
-	SDL_SetRenderTarget(renderer, texture);
-	SDL_Rect color_tile {0, 0, 15, 15};
+	// TODO: Refactor show palette
+//	SDL_Rect color_tile {0, 0, 15, 15};
+//	SDL_SetRenderTarget(renderer, texture);
+//	// 绘制调色板
+//	for (int j = 0; j < 4; ++j) {
+//		for(int i = 0; i < 16; ++i) {
+//			color_tile.x = i * color_tile.w;
+//			color_tile.y = j * color_tile.h;
+//			uint32_t c = palette[j * 16 + i];
+//			SDL_Color color {static_cast<uint8_t>((c >> 16) & 0xFF),
+//			                 static_cast<uint8_t>((c >> 8) & 0xFF),
+//			                 static_cast<uint8_t>(c & 0xFF),  0x00};
+//			SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+//			SDL_RenderFillRect(renderer, &color_tile);
+//		}
+//	}
+//
+//	// 渲染调色板
+//	SDL_Rect board {0, 0, 16 * color_tile.w, 4 * color_tile.h};
+//	SDL_SetWindowSize(window, board.w * 3, board.h * 3);
+//	SDL_SetRenderTarget(renderer, NULL);
+//	SDL_RenderCopy(renderer, texture, &board, NULL);
+//
+//	SDL_RenderPresent(renderer);
 
-	// 绘制调色板
-	for (int j = 0; j < 4; ++j) {
-		for(int i = 0; i < 16; ++i) {
-			color_tile.x = i * color_tile.w;
-			color_tile.y = j * color_tile.h;
-			const SDL_Color & color = palette[j * 16 + i];
-			SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-			SDL_RenderFillRect(renderer, &color_tile);
-		}
-	}
-
-	// 渲染调色板
-	SDL_Rect board {0, 0, 16 * color_tile.w, 4 * color_tile.h};
-	SDL_SetWindowSize(window, board.w * 3, board.h * 3);
-	SDL_SetRenderTarget(renderer, NULL);
-	SDL_RenderCopy(renderer, texture, &board, NULL);
-
-	SDL_RenderPresent(renderer);
 	while(event.type != SDL_QUIT)
 		SDL_PollEvent(&event);
 
 }
 
 void PPU::showPatternTable() {
-	SDL_SetRenderTarget(renderer, texture);
-	const SDL_Color tile_colors[] = {
-			palette[0x00],
-			palette[0x01],
-			palette[0x02],
-			palette[0x03],
-	};
-
-
-	// left and right，绘制PatternTable
-	for(int j = 0; j < 16; ++j) {
-		for(int i = 0; i < 32; ++i) {
-			for(int y = 0; y < 8; ++y) {
-				uint16_t lower_tile_addr = y | ((i & 0xf) << 0x4) | j << 0x8 | GetBit(i, 4) << 0xC,
-				         upper_tile_addr = lower_tile_addr | 0x8;
-				uint8_t lower_tile = mem[lower_tile_addr],
-						upper_tile = mem[upper_tile_addr];
-
-				for (int x = 0; x < 8; ++x) {
-					const SDL_Color &color = tile_colors[ (GetBit(upper_tile, 7 - x) << 0x1) | GetBit(lower_tile, 7-x) ];
-					SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-					SDL_RenderDrawPoint(renderer, i * 8 + x, j * 8 + y);
-
-				}
-			}
-		}
-	}
-
-	// 渲染Pattern Table
-	SDL_Rect board {0, 0, 256, 128};
-	SDL_SetWindowSize(window, board.w * 3, board.h * 3);
-	SDL_SetRenderTarget(renderer, NULL);
-	SDL_RenderCopy(renderer, texture, &board, NULL);
+	// TODO: refactor show pattern table
+//	SDL_SetRenderTarget(renderer, texture);
+//	const uint32_t tile_colors[] = {
+//			palette[0x00],
+//			palette[0x01],
+//			palette[0x02],
+//			palette[0x03],
+//	};
+//
+//
+//	// left and right，绘制PatternTable
+//	for(int j = 0; j < 16; ++j) {
+//		for(int i = 0; i < 32; ++i) {
+//			for(int y = 0; y < 8; ++y) {
+//				uint16_t lower_tile_addr = y | ((i & 0xf) << 0x4) | j << 0x8 | GetBit(i, 4) << 0xC,
+//				         upper_tile_addr = lower_tile_addr | 0x8;
+//				uint8_t lower_tile = mem[lower_tile_addr],
+//						upper_tile = mem[upper_tile_addr];
+//
+//				for (int x = 0; x < 8; ++x) {
+//					uint32_t c = tile_colors[ (GetBit(upper_tile, 7 - x) << 0x1) | GetBit(lower_tile, 7-x) ];
+//					SDL_Color color {static_cast<uint8_t>((c >> 0x8) & 0xFF),
+//					                 static_cast<uint8_t>((c >> 0x4) & 0xFF),
+//					                 static_cast<uint8_t>(c & 0xFF),  0x00};
+//					SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+//					SDL_RenderDrawPoint(renderer, i * 8 + x, j * 8 + y);
+//
+//				}
+//			}
+//		}
+//	}
+//
+//	// 渲染Pattern Table
+//	SDL_Rect board {0, 0, 256, 128};
+//	SDL_SetWindowSize(window, board.w * 3, board.h * 3);
+//	SDL_SetRenderTarget(renderer, NULL);
+//	SDL_RenderCopy(renderer, texture, &board, NULL);
 
 	SDL_RenderPresent(renderer);
 	while(event.type != SDL_QUIT)
@@ -161,9 +142,7 @@ void PPU::pixel(unsigned x, unsigned y) {
 		}
 
 
-		const SDL_Color &color = palette[mem[0x3F00 + (rendering() ? draw_palette : 0)]];
-		SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-		SDL_RenderDrawPoint(renderer, x, y);
+		video_buffer[screen_width * y + x] = palette[mem[0x3F00 + (rendering() ? draw_palette : 0)]];
 	}
 
 	bgShiftL <<= 1; bgShiftH <<= 1;
@@ -249,11 +228,9 @@ void PPU::step() {
 	}
 	else if(scanline == 240 && dot == 0) { // frame end
 //		printf("one frame cpu cycles: %d\n", cpu->cycles);
-		SDL_SetRenderTarget(renderer, NULL);
+		SDL_UpdateTexture(texture, NULL, video_buffer, sizeof(uint32_t) * screen_width);
 		SDL_RenderCopy(renderer, texture, NULL, NULL);
 		SDL_RenderPresent(renderer);
-
-		SDL_SetRenderTarget(renderer, texture);
 		odd_frame = !odd_frame;
 		++frames_count;
 	} else if(scanline == 241 && dot == 1) { // set VBlank flag
