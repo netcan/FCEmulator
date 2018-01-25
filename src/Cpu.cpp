@@ -488,9 +488,6 @@ void CPU::Write(uint16_t addr, uint8_t value) {
 			break;
 		case 0x2007: // PPUDATA
 			ppu->v.s = 0;
-			if(ppu->v.addr == 0x3f04 || ppu->v.addr == 0x3f08 || ppu->v.addr == 0x3f0c ||
-			   ppu->v.addr == 0x3f14 || ppu->v.addr == 0x3f18 || ppu->v.addr == 0x3f1c 	) // 忽略0x3f04, 0x3f08...
-				break;
 			ppu->mem[ppu->v.addr] = value;
 			ppu->v.addr += ppu->PPUCTRL.I ? 32:1;
 			break;

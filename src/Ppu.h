@@ -25,7 +25,7 @@ private:
 				  AT(addr & 0x3fff));
 
 		if(addr >= 0x3f00 && addr < 0x4000 && (addr & 0x1f) % 4 == 0)
-			ret = &Palette[0x00];
+			ret = &Palette[addr & 0xf];
 
 		return *ret;
 	}
@@ -38,13 +38,16 @@ private:
 
 public:
 	friend class Famicom;
-	__PPUMem__() { setHorizontalMirroring(); }
+	__PPUMem__() {
+		memset(VRAM, 0xFF, sizeof(VRAM));
+		setHorizontalMirroring();
+	}
 	uint8_t &operator[](uint16_t addr) { return AT(addr); }
 	const uint8_t &operator[](uint16_t addr) const { return AT(addr); }
 
 	using iterator = MemIterator<__PPUMem__>;
 	iterator begin() { return iterator(this, 0); }
-	iterator end() { return iterator(this, 0x10000); }
+	iterator end() { return iterator(this, 0x4000); }
 
 	void setHorizontalMirroring() {
 		for (int addr = 0; addr < 0x400; ++addr) {
@@ -119,10 +122,13 @@ private:
 	uint8_t fineX;  // 8x8块中的X列
 	bool w;         // First or second write toggle
 	bool odd_frame; // 奇偶帧
+	uint32_t frames_count = 0; // 统计帧数
+
 	uint16_t bgShiftL, bgShiftH;
 	uint8_t bgL, bgH, nt, at;   // nt存放的是pattern table的index
 	uint8_t atShiftL, atShiftH;
 	bool atL, atH;
+	uint16_t internal_load_addr; // PPU读取像素数据用的地址
 
 	uint8_t OAMADDR, OAMDATA, PPUSCROLL,
 			PPUADDR, PPUDATA, OAMDMA;
@@ -175,7 +181,7 @@ public:
 	void v_update();
 	inline bool rendering() { return PPUMASK.s || PPUMASK.b; }
 	inline uint16_t get_nt_addr() { return 0x2000 | (v.addr & 0x0FFF); }
-	inline uint16_t get_at_addr() { return 0x23C0 | (v.addr & 0x0C00) | ((v.addr >> 4) & 0x38) | ((v.addr >> 2) & 0x07); }
-	inline uint16_t get_bg_tile_addr() { return PPUCTRL.B * 0x1000 | (nt << 4) | v.fineY; }
+	inline uint16_t get_at_addr() { return 0x23C0 | (v.NN << 10) | ((v.coarseY / 4) << 3) | (v.coarseX / 4); }
+	inline uint16_t get_bg_tile_addr() { return (PPUCTRL.B * 0x1000) + (nt * 16) + v.fineY; }
 };
 

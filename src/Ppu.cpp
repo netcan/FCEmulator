@@ -58,6 +58,7 @@ PPU::PPU() {
 	PPUSCROLL = PPUADDR = 0;
 
 
+
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't initialize SDL: %s", SDL_GetError());
 		exit(-1);
@@ -148,7 +149,7 @@ void PPU::showPatternTable() {
 }
 
 void PPU::pixel(unsigned x, unsigned y) {
-	uint8_t draw_palette;
+	uint8_t draw_palette = 0;
 
 	if(y < 240 && x >= 0 && x < 256) {
 		if (PPUMASK.b && !(!PPUMASK.m && x < 8)) {
@@ -171,11 +172,11 @@ void PPU::pixel(unsigned x, unsigned y) {
 }
 
 void PPU::reload_shift() {
-	bgShiftL = (bgShiftL & 0xFF00) | bgL;
-	bgShiftH = (bgShiftH & 0xFF00) | bgH;
+	bgShiftL = static_cast<uint16_t>((bgShiftL & 0xFF00) | bgL);
+	bgShiftH = static_cast<uint16_t>((bgShiftH & 0xFF00) | bgH);
 
-	atL= (at & 1);
-	atH = (at & 2);
+	atL= static_cast<bool>(at & 1);
+	atH = static_cast<bool>((at >> 0x01) & 1);
 }
 
 void PPU::h_scroll() {
@@ -210,49 +211,51 @@ void PPU::v_update() {
 void PPU::step() {
 	uint16_t    scanline = cycles / frame_width,
 				dot = cycles % frame_width;
-	uint16_t addr;
 
 	if( (scanline >= 0 && scanline < 240) || scanline == 261) { // Visable frame or Pre-render line(dummy scanline)
-
 		// 背景
 		switch (dot) {
-			case 2 ... 255: case 322 ... 337:
+			case 2 ... 255:
+			case 322 ... 337:
 				pixel(dot - 2, scanline);
 				switch (dot % 8) {
 					// Nametable:
-					case 1:  addr  = get_nt_addr(); reload_shift(); break;
-					case 2:  nt    = mem[addr];  break;
+					case 1:  internal_load_addr  = get_nt_addr(); reload_shift(); break;
+					case 2:  nt    = mem[internal_load_addr];  break;
 					// Attribute:
-					case 3:  addr  = get_at_addr(); break;
-					case 4:  at    = mem[addr]; if (v.coarseY & 2) at >>= 4;
-												if (v.coarseX & 2) at >>= 2; break;
+					case 3:  internal_load_addr  = get_at_addr(); break;
+					case 4:  at    = mem[internal_load_addr];
+						if (v.coarseY & 2) at >>= 4;
+						if (v.coarseX & 2) at >>= 2;
+						break;
 					// Background (low bits):
-					case 5:  addr  = get_bg_tile_addr(); break;
-					case 6:  bgL   = mem[addr];  break;
+					case 5:  internal_load_addr  = get_bg_tile_addr(); break;
+					case 6:  bgL   = mem[internal_load_addr];  break;
 					// Background (high bits):
-					case 7:  addr += 8;         break;
-					case 0:  bgH   = mem[addr]; h_scroll(); break;
+					case 7:  internal_load_addr += 8;         break;
+					case 0:  bgH   = mem[internal_load_addr]; h_scroll(); break;
 				} break;
-			case         256:  pixel(dot - 2, scanline); bgH = mem[addr]; v_scroll(); break;  // Vertical bump.
+			case         256:  pixel(dot - 2, scanline); bgH = mem[internal_load_addr]; v_scroll(); break;  // Vertical bump.
 			case         257:  pixel(dot - 2, scanline); reload_shift(); h_update(); break;  // Update horizontal position.
 			case 280 ... 304:  if (scanline == 261)            v_update(); break;  // Update vertical position.
 
-				// No shift reloading:
-			case             1:  addr = get_nt_addr(); if(scanline == 261) PPUSTATUS.V = 0; break;
-			case 321: case 339:  addr = get_nt_addr(); break;
-				// Nametable fetch instead of attribute:
-			case           338:  nt = mem[addr]; break;
-			case           340:  nt = mem[addr]; if(scanline == 261 && rendering() && odd_frame) ++cycles; break;
+			// No shift reloading:
+			case             1:  internal_load_addr = get_nt_addr(); if(scanline == 261) PPUSTATUS.V = 0; break;
+			case 321: case 339:  internal_load_addr = get_nt_addr(); break;
+			// Nametable fetch instead of attribute:
+			case           338:  nt = mem[internal_load_addr]; break;
+			case           340:  nt = mem[internal_load_addr]; if(scanline == 261 && rendering() && odd_frame) ++cycles; break;
 		}
 	}
 	else if(scanline == 240 && dot == 0) { // frame end
-		printf("one frame cpu cycles: %d\n", cpu->cycles);
+//		printf("one frame cpu cycles: %d\n", cpu->cycles);
 		SDL_SetRenderTarget(renderer, NULL);
 		SDL_RenderCopy(renderer, texture, NULL, NULL);
 		SDL_RenderPresent(renderer);
 
 		SDL_SetRenderTarget(renderer, texture);
 		odd_frame = !odd_frame;
+		++frames_count;
 	} else if(scanline == 241 && dot == 1) { // set VBlank flag
 		PPUSTATUS.V = 1;
 		if(PPUCTRL.V) cpu->nmi = true;
