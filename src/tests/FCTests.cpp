@@ -172,6 +172,8 @@ TEST(CPUTest, test_ram_iterator) {
 TEST(CPUTest, opTest) {
 	CPU cpu;
 	PPU ppu;
+	cpu.connectTo(ppu);
+	ppu.connectTo(cpu);
 	Cartridge cart;
 	uint8_t &X = cpu.getX(), &Y = cpu.getY(),
 			&SP = cpu.getSP(), &A = cpu.getA();
@@ -641,13 +643,23 @@ TEST(CPUTest, opTest) {
 	EXPECT_EQ(PC, tmpPC + 8);
 	EXPECT_EQ(cpu.Execute(), 2);    // nop
 
-	tmpPC = PC;
-	cpu.Write(0x66ff, 0xab);
-	cpu.Write(0x6600, 0xcd); // cdab
-	EXPECT_EQ(cpu.Execute(), 5);    // jmp ($ff66)
-	EXPECT_EQ(PC, 0xcdab);
+	EXPECT_EQ(cpu.Execute(), 2);    // lda #$20
+	EXPECT_EQ(A, 0x20);
+	EXPECT_EQ(cpu.Execute(), 4);    // sta $2006
+	EXPECT_EQ(cpu.Execute(), 2);    // lda #$18
+	EXPECT_EQ(A, 0x18);
+	EXPECT_EQ(cpu.Execute(), 4);    // sta $2006
+	ppu.getPPUMEM()[0x2018] = 0xab;
+	EXPECT_EQ(cpu.Execute(), 4);    // lda $2007
+	EXPECT_EQ(cpu.Execute(), 4);    // lda $2007
+	EXPECT_EQ(A, 0xab);
 
-	PC = tmpPC + 3;
+	EXPECT_EQ(cpu.Execute(), 2);    // lda #$80
+	EXPECT_EQ(cpu.Execute(), 4);    // sta $2002
+	EXPECT_EQ(cpu.Execute(), 4);    // lda $2002
+	EXPECT_EQ(A, 0x80);
+	EXPECT_EQ(cpu.Execute(), 4);    // lda $2002
+	EXPECT_EQ(A, 0x00);
 
 }
 

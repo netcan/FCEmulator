@@ -122,10 +122,21 @@ bcc_test:   nop
 
     jsr jsr_test
     jmp after_jsr
+
+
 jsr_test:
     nop
     rts
 after_jsr:
     nop
+    lda #$20
+    sta $2006
+    lda #$18
+    sta $2006
+    lda $2007 ; discard the first read
+    lda $2007
 
-    jmp ($66ff)
+    lda #$80
+    sta $2002 ; set 2002.7
+    lda $2002
+    lda $2002

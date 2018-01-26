@@ -299,84 +299,63 @@ const Operation ** CPU::InitOptable() {
 	return optable;
 }
 
-void CPU::FetchOperands(CPU::OpAddressingMode addressing_mode, uint16_t &opd_addr, const uint8_t *& operand, bool& crossed_page) {
-	static uint8_t tempOprand = 0; // 读取用，暂存
-	operand = &tempOprand;
+void CPU::FetchOperandAddr(CPU::OpAddressingMode addressing_mode, uint16_t &opd_addr, bool& crossed_page, bool &has_operand) {
+	// has_operand: 若opd_addr地址有效，就说明有操作数
 	uint16_t pointer;
+	has_operand = true;
 	switch (addressing_mode) { // 发现致命Bug，Read8会产生副作用，应该根据指令的读写性质来调用Read8
 		case OpAddressingMode::Implicit:
 		case OpAddressingMode::Accumulator:
-			operand = nullptr;
+			has_operand = false;
 			break;
 		case OpAddressingMode::Immediate:
 			opd_addr = PC+1;
-			tempOprand = mem[opd_addr];
-			operand = &tempOprand;
 			break;
 
 		case OpAddressingMode::Absolute:
 			opd_addr = Read16(PC + 1);
-			tempOprand = mem[opd_addr];
-			operand = &tempOprand;
 			break;
-
 		case OpAddressingMode::AbsoluteX:
 			opd_addr = Read16(PC + 1);
 			if( ((opd_addr + X) & 0xff00) != (opd_addr & 0xff00) ) crossed_page = true;
 			opd_addr += X;
-			tempOprand = mem[opd_addr];
-			operand = &tempOprand;
 			break;
 		case OpAddressingMode::AbsoluteY:
 			opd_addr = Read16(PC + 1);
 			if( ((opd_addr + Y) & 0xff00) != (opd_addr & 0xff00) ) crossed_page = true;
 			opd_addr += Y;
-			tempOprand = mem[opd_addr];
-			operand = &tempOprand;
 			break;
 
 		case OpAddressingMode::Relative: // 分支指令专用
 			opd_addr = PC + 1;
-			tempOprand = mem[opd_addr];
-			operand = &tempOprand;
 			break;
 		case OpAddressingMode::IndexIndirect: // IDX
 			pointer = mem[PC + 1];
 			opd_addr = (mem[(pointer + 1 + X) & 0xff] << 8) | mem[(pointer + X) & 0xff];
-			tempOprand = Read8(opd_addr);
-			operand = &tempOprand;
 			break;
 
 		case OpAddressingMode::IndirectIndex: // IDY
 			pointer = mem[PC + 1];
-			opd_addr = Read8(pointer) | Read8((pointer + 1) & 0xff) << 0x08;
+			opd_addr = mem[pointer] | mem[(pointer + 1) & 0xff] << 0x08;
 			if( ((opd_addr + Y) & 0xff00) != (opd_addr & 0xff00) ) crossed_page = true;
 			opd_addr += Y;
-			tempOprand = mem[opd_addr];
-			operand = &tempOprand;
 			break;
 
 		case OpAddressingMode::ZeroPage:
 			opd_addr = mem[PC + 1];
-			tempOprand = mem[opd_addr];
-			operand = &tempOprand;
 			break;
 
 		case OpAddressingMode::ZeroPageX:
 			opd_addr = (mem[PC + 1] + X) & 0xff;
-			tempOprand = mem[opd_addr];
-			operand = &tempOprand;
 			break;
 
 		case OpAddressingMode::ZeroPageY:
 			opd_addr = (mem[PC + 1] + Y) & 0xff;
-			tempOprand = mem[opd_addr];
-			operand = &tempOprand;
 			break;
 
 		case OpAddressingMode::Indirect: // JMP专用
 		default:
-			operand = nullptr;
+			has_operand = false;
 			break;
 	}
 }
@@ -391,8 +370,8 @@ uint8_t CPU::Interrupt(uint16_t vec_addr) {
 	P.IrqDisabled = true;
 	PC = Read16(vec_addr);
 
-	cycles += 7;
-	return 7; // 7个周期
+	cycles += 7 * 2;
+	return 7 * 2; // 7个周期，通过延迟nmi长度，将vbl flag clear调整在合适的范围内，通过vbl_clear_time测试
 }
 
 void CPU::ShowStatus() {
@@ -408,7 +387,7 @@ uint8_t CPU::Execute() {
 	// 中断
 	if(nmi) {
 		nmi = false;
-		return Interrupt(static_cast<uint16_t >(InterruptVector::NMI));
+		return Interrupt(static_cast<uint16_t>(InterruptVector::NMI));
 	}
 
 	// 取指
@@ -416,13 +395,12 @@ uint8_t CPU::Execute() {
 	uint16_t updated_pc = PC + optable[op_code]->bytes;
 
 	// 译码
-	const uint8_t *operand = nullptr;
 	uint16_t opd_addr = 0xFFFF; // 默认值0xFFFF
-	bool crossed_page = false;
-	FetchOperands(optable[op_code]->addressing_mode, opd_addr, operand, crossed_page);
+	bool crossed_page = false, has_operand = true;
+	FetchOperandAddr(optable[op_code]->addressing_mode, opd_addr, crossed_page, has_operand);
 
 	// 执行
-	uint8_t cycle = ExeFunc(optable[op_code], this, opd_addr, operand, updated_pc, crossed_page);
+	uint8_t cycle = ExeFunc(optable[op_code], this, opd_addr, updated_pc, crossed_page, has_operand);
 
 	// 更新PC
 	PC = updated_pc;
@@ -443,10 +421,15 @@ uint8_t CPU::Read8(uint16_t addr) const {
 			ret = ppu->OAM[ppu->OAMADDR];
 			break;
 		case 0x2007: // PPUDATA
-			if(ppu->v.addr <= 0x3EFF) {
+			if(ppu->v.addr < 0x3F00) {
 				ret = ppu->PPUDATA_buffer;
 				ppu->PPUDATA_buffer = ppu->mem[ppu->v.addr];
-			} else ret = ppu->PPUDATA_buffer = ppu->mem[ppu->v.addr];
+			} else {
+				ret = ppu->mem[ppu->v.addr];
+				// Reading the palettes still updates the internal buffer though,
+				// but the data placed in it is the mirrored nametable data that would appear "underneath" the palette.
+				ppu->PPUDATA_buffer = ppu->mem[ppu->v.addr - 0x1000];
+			}
 			ppu->v.addr += ppu->PPUCTRL.I ? 32:1;
 			break;
 	}
@@ -496,29 +479,30 @@ void CPU::Write(uint16_t addr, uint8_t value) {
 
 // 参考手册： http://obelisk.me.uk/6502/reference.html
 /**************** 指令实现区Begin ****************/
-#define MorA (operand ? *operand:cpu->A)
-#define Branch(field, value)    if (cpu->P.field == value) { \
-									if( ( (updated_pc) & 0xff00) != ( (updated_pc + (int8_t)*operand) & 0xff00) ) crossed_page = true; \
-									updated_pc += (int8_t) *operand; \
+#define MorA (has_operand ? operand:cpu->A)
+#define Branch(field, value)    int8_t offset = cpu->mem[opd_addr]; \
+								if (cpu->P.field == value) { \
+									if( ( (updated_pc) & 0xff00) != ( (updated_pc + offset) & 0xff00) ) crossed_page = true; \
+									updated_pc += offset; \
 									return uint8_t(self.cycles + crossed_page + 1); \
 								} \
 								return self.cycles;
 
 #define FixCycle self.cycles + crossed_page;
-#define OpRM(R, op) OpRMProc(R, op, *operand); \
+#define OpRM(R, op) OpRMProc(R, op, operand); \
 					return FixCycle;
 
-// OpRMProc这个版本需要修改操作数的值，由于*operand是只读的，所以只能传个修改后的临时值
-#define OpRMProc(R, op, value) cpu->R op value; \
-						cpu->P.Negative = Sign(cpu->R); \
-						cpu->P.Zero = cpu->R == 0;
+// OpRMProc这个版本需要修改操作数的值
+#define OpRMProc(R, op, value)  cpu->R op value; \
+								cpu->P.Negative = Sign(cpu->R); \
+								cpu->P.Zero = cpu->R == 0;
 
 #define TRNS(T, F)  T = F; \
 					cpu->P.Negative = Sign(T); \
 					cpu->P.Zero = T == 0; \
 					return self.cycles;
 
-#define UpdateMorA(value)   if(operand) cpu->Write(opd_addr, value); \
+#define UpdateMorA(value)   if(has_operand) cpu->Write(opd_addr, value); \
 							else cpu->A = value;
 
 OpExeFuncDefine(OP_ASL) {
@@ -532,12 +516,10 @@ OpExeFuncDefine(OP_ASL) {
 	 * setting the carry if the result will not fit in 8 bits.
 	 **/
 	// 读的副作用
-	cpu->Read8(opd_addr);
+	uint8_t operand = cpu->Read8(opd_addr);
 
 	uint16_t result = MorA << 1;
 	//	MorA <<= 1;
-	// 两次写
-	UpdateMorA(result);
 	UpdateMorA(result);
 
 	cpu->P.Zero = ((result & 0xff) == 0);
@@ -658,15 +640,13 @@ OpExeFuncDefine(OP_LSR) {
 	 * 7 is set to zero.
 	 **/
 	// 读的副作用
-	cpu->Read8(opd_addr);
+	uint8_t operand = cpu->Read8(opd_addr);
 
 	auto result = uint8_t(MorA >> 1);
 	cpu->P.Carry = GetBit(MorA, 0x0);
 	cpu->P.Zero = result == 0;
 	cpu->P.Negative = false;
 //	MorA = result;
-	// 两次写
-	UpdateMorA(result);
 	UpdateMorA(result);
 
 	return self.cycles;
@@ -691,7 +671,7 @@ OpExeFuncDefine(OP_ROL) {
 	 * the old bit 7 becomes the new carry flag value.
 	 **/
 	// 读的副作用
-	cpu->Read8(opd_addr);
+	uint8_t operand = cpu->Read8(opd_addr);
 
 	auto result = uint8_t(MorA << 1) | cpu->P.Carry;
 	cpu->P.Carry = GetBit(MorA, 0x7);
@@ -712,7 +692,7 @@ OpExeFuncDefine(OP_ROR) {
 	 * the old bit 0 becomes the new carry flag value.
 	 **/
 	// 读的副作用
-	cpu->Read8(opd_addr);
+	uint8_t operand = cpu->Read8(opd_addr);
 
 	auto result = uint8_t(MorA >> 1) | (cpu->P.Carry) << 0x7;
 	cpu->P.Carry = GetBit(MorA, 0);
@@ -931,7 +911,6 @@ OpExeFuncDefine(OP_BCC) {
 	 * If the carry flag is clear then add the relative displacement
 	 * to the program counter to cause a branch to a new location.
 	 **/
-
 	Branch(Carry, false);
 }
 
@@ -941,7 +920,6 @@ OpExeFuncDefine(OP_BCS) {
 	 * If the carry flag is set then add the relative displacement
 	 * to the program counter to cause a branch to a new location.
 	 **/
-
 	Branch(Carry, true);
 }
 
@@ -1015,10 +993,10 @@ OpExeFuncDefine(OP_ADC) {
 	 * performed.
 	 **/
 	// 读的副作用
-	cpu->Read8(opd_addr);
-	uint16_t result = uint16_t(cpu->A) + uint16_t(*operand) + cpu->P.Carry;
+	uint8_t operand = cpu->Read8(opd_addr);
+	uint16_t result = uint16_t(cpu->A) + uint16_t(operand) + cpu->P.Carry;
 	cpu->P.Overflow = GetBit(result, 0x8) ^
-	                  GetBit( (cpu->A & uint8_t(0x7f)) + (*operand & uint8_t(0x7f)) + cpu->P.Carry, 0x7); // for signed number
+	                  GetBit( (cpu->A & uint8_t(0x7f)) + (operand & uint8_t(0x7f)) + cpu->P.Carry, 0x7); // for signed number
 	cpu->P.Carry = GetBit(result, 0x8); // for usigned number
 	cpu->P.Zero = (result & 0xff) == 0;
 	cpu->P.Negative = Sign(uint8_t(result));
@@ -1036,7 +1014,7 @@ OpExeFuncDefine(OP_AND) {
 	 * contents using the contents of a byte of memory.
 	 **/
 	// 读的副作用
-	cpu->Read8(opd_addr);
+	uint8_t operand = cpu->Read8(opd_addr);
 	OpRM(A, &=);
 }
 
@@ -1049,10 +1027,10 @@ OpExeFuncDefine(OP_CMP) {
 	 * appropriate.
 	 **/
 	// 读的副作用
-	cpu->Read8(opd_addr);
-	cpu->P.Carry = cpu->A >= *operand;
-	cpu->P.Zero = cpu->A == *operand;
-	cpu->P.Negative = Sign(cpu->A - *operand);
+	uint8_t operand = cpu->Read8(opd_addr);
+	cpu->P.Carry = cpu->A >= operand;
+	cpu->P.Zero = cpu->A == operand;
+	cpu->P.Negative = Sign(cpu->A - operand);
 
 	return FixCycle;
 }
@@ -1065,9 +1043,10 @@ OpExeFuncDefine(OP_CPX) {
 	 * another memory held value and sets the zero and carry flags as
 	 * appropriate.
 	 **/
-	cpu->P.Carry = cpu->X >= *operand;
-	cpu->P.Zero = cpu->X == *operand;
-	cpu->P.Negative = Sign(cpu->X - *operand);
+	uint8_t operand = cpu->Read8(opd_addr);
+	cpu->P.Carry = cpu->X >= operand;
+	cpu->P.Zero = cpu->X == operand;
+	cpu->P.Negative = Sign(cpu->X - operand);
 
 	return self.cycles;
 }
@@ -1080,9 +1059,10 @@ OpExeFuncDefine(OP_CPY) {
 	 * another memory held value and sets the zero and carry flags as
 	 * appropriate.
 	 **/
-	cpu->P.Carry = cpu->Y >= *operand;
-	cpu->P.Zero = cpu->Y == *operand;
-	cpu->P.Negative = Sign(cpu->Y - *operand);
+	uint8_t operand = cpu->Read8(opd_addr);
+	cpu->P.Carry = cpu->Y >= operand;
+	cpu->P.Zero = cpu->Y == operand;
+	cpu->P.Negative = Sign(cpu->Y - operand);
 
 	return self.cycles;
 }
@@ -1095,7 +1075,7 @@ OpExeFuncDefine(OP_EOR) {
 	 * contents using the contents of a byte of memory.
 	 **/
 	// 读的副作用
-	cpu->Read8(opd_addr);
+	uint8_t operand = cpu->Read8(opd_addr);
 	OpRM(A, ^=);
 }
 
@@ -1107,7 +1087,7 @@ OpExeFuncDefine(OP_LDA) {
 	 * and negative flags as appropriate.
 	 **/
 	// 读的副作用
-	cpu->Read8(opd_addr);
+	uint8_t operand = cpu->Read8(opd_addr);
 	OpRM(A, =);
 }
 
@@ -1119,7 +1099,7 @@ OpExeFuncDefine(OP_LDX) {
 	 * and negative flags as appropriate.
 	 **/
 	// 读的副作用
-	cpu->Read8(opd_addr);
+	uint8_t operand = cpu->Read8(opd_addr);
 	OpRM(X, =);
 }
 
@@ -1131,7 +1111,7 @@ OpExeFuncDefine(OP_LDY) {
 	 * and negative flags as appropriate.
 	 **/
 	// 读的副作用
-	cpu->Read8(opd_addr);
+	uint8_t operand = cpu->Read8(opd_addr);
 	OpRM(Y, =);
 
 }
@@ -1144,7 +1124,7 @@ OpExeFuncDefine(OP_ORA) {
 	 * contents using the contents of a byte of memory.
 	 **/
 	// 读的副作用
-	cpu->Read8(opd_addr);
+	uint8_t operand = cpu->Read8(opd_addr);
 	OpRM(A, |=);
 }
 
@@ -1158,12 +1138,12 @@ OpExeFuncDefine(OP_SBC) {
 	 * byte subtraction to be performed.
 	 **/
 	// 读的副作用
-	cpu->Read8(opd_addr);
+	uint8_t operand = cpu->Read8(opd_addr);
 
 	// 不能直接A-M-(1-C)，直接减有坑，需要把减法换成加法运算
 	// A-M-(1-C) = A-M-1+C = A-(M+1)+C = A + [~(M+1) + 1] + C = A + ~M + C
 
-	auto tmpOperand = uint8_t(~*operand); // 将tmpOperand取-(*operand+1)
+	auto tmpOperand = uint8_t(~operand); // 将tmpOperand取-(*operand+1)
 	uint16_t result = uint16_t(cpu->A) + uint16_t(tmpOperand) + cpu->P.Carry;
 	cpu->P.Overflow = GetBit(result, 0x8) ^
 	                  GetBit( (cpu->A & uint8_t(0x7f)) + (tmpOperand & uint8_t(0x7f)) + cpu->P.Carry, 0x7); // for signed number
@@ -1187,10 +1167,10 @@ OpExeFuncDefine(OP_BIT) {
 	 * into the N and V flags.
 	 **/
 	// 读的副作用
-	cpu->Read8(opd_addr);
-	cpu->P.Negative = GetBit(*operand, 7);
-	cpu->P.Overflow = GetBit(*operand, 6);
-	cpu->P.Zero = (cpu->A & *operand) == 0;
+	uint8_t operand = cpu->Read8(opd_addr);
+	cpu->P.Negative = GetBit(operand, 7);
+	cpu->P.Overflow = GetBit(operand, 6);
+	cpu->P.Zero = (cpu->A & operand) == 0;
 
 	return self.cycles;
 }
@@ -1239,10 +1219,9 @@ OpExeFuncDefine(OP_DEC) {
 	 * setting the zero and negative flags as appropriate.
 	 **/
 	// 读的副作用
-	cpu->Read8(opd_addr);
+	uint8_t operand = cpu->Read8(opd_addr);
 
-	uint8_t result = *operand - 1;
-	UpdateMorA(result);
+	uint8_t result = operand - 1;
 	UpdateMorA(result);
 //	--*operand;
 	cpu->P.Zero = result == 0;
@@ -1259,9 +1238,9 @@ OpExeFuncDefine(OP_INC) {
 	 * the zero and negative flags as appropriate.
 	 **/
 	// 读的副作用
-	cpu->Read8(opd_addr);
+	uint8_t operand = cpu->Read8(opd_addr);
 
-	uint8_t result = *operand + 1;
+	uint8_t result = operand + 1;
 //	++*operand;
 	UpdateMorA(result);
 	UpdateMorA(result);
@@ -1277,14 +1256,14 @@ OpExeFuncDefine(OP_JMP) {
 	 * Sets the program counter to the address specified by the operand.
 	 **/
 
-	if(operand) // Absolute addressing
+	if(has_operand) // Absolute addressing
 		updated_pc = cpu->Read16(uint16_t(cpu->PC+1));
 	else { // Indirect addressing
 		uint16_t indirect_address = cpu->Read16(uint16_t(cpu->PC+1));
-		auto PCH = uint8_t((indirect_address & 0xff00) >> 0x8),
+		auto    PCH = uint8_t((indirect_address & 0xff00) >> 0x8),
 				PCL = uint8_t(indirect_address & 0xff);
-		updated_pc = (cpu->Read8(indirect_address)) |
-					 (cpu->Read8(PCH << 0x8 | uint8_t(PCL + 1) ) << 0x8);
+		updated_pc = (cpu->mem[indirect_address]) |
+					 (cpu->mem[PCH << 0x8 | uint8_t(PCL + 1) ] << 0x8);
 	}
 
 	return self.cycles;
@@ -1424,8 +1403,8 @@ OpExeFuncDefine(OP_LAX) {
 	 * Status flags: N,Z
 	 **/
 	// 读的副作用
-	cpu->Read8(opd_addr);
-	cpu->A = *operand;
+	uint8_t operand = cpu->Read8(opd_addr);
+	cpu->A = operand;
 	OpRM(X, =);
 }
 
@@ -1436,11 +1415,10 @@ OpExeFuncDefine(OP_DCP) {
 	 * Status flags: C,Z,N
 	 **/
 	// 读的副作用
-	cpu->Read8(opd_addr);
+	uint8_t operand = cpu->Read8(opd_addr);
 
 //	--*operand;
-	uint8_t result = *operand - 1;
-	cpu->Write(opd_addr, result);
+	uint8_t result = operand - 1;
 	cpu->Write(opd_addr, result);
 	cpu->P.Carry = cpu->A >= result;
 	cpu->P.Zero = cpu->A == result;
@@ -1456,13 +1434,12 @@ OpExeFuncDefine(OP_ISC) {
 	 * borrow). Status flags: N,V,Z,C
 	 **/
 	// 读的副作用
-	cpu->Read8(opd_addr);
+	uint8_t operand = cpu->Read8(opd_addr);
 
 //	++*operand;
-	cpu->Write(opd_addr, *operand + 1);
-	cpu->Write(opd_addr, *operand + 1);
+	cpu->Write(opd_addr, operand + 1);
 
-	auto tmpOperand = uint8_t(~(*operand + 1)); // 将tmpOperand取-(*operand+1)
+	auto tmpOperand = uint8_t(~(operand + 1)); // 将tmpOperand取-(*operand+1)
 	uint16_t result = uint16_t(cpu->A) + uint16_t(tmpOperand) + cpu->P.Carry;
 	cpu->P.Overflow = GetBit(result, 0x8) ^
 	                  GetBit( (cpu->A & uint8_t(0x7f)) + (tmpOperand & uint8_t(0x7f)) + cpu->P.Carry, 0x7); // for signed number
@@ -1481,12 +1458,11 @@ OpExeFuncDefine(OP_RLA) {
 	 * flags: N,Z,C
 	 **/
 	// 读的副作用
-	cpu->Read8(opd_addr);
+	uint8_t operand = cpu->Read8(opd_addr);
 
-	auto result = uint8_t(*operand << 1) | cpu->P.Carry;
-	cpu->P.Carry = GetBit(*operand, 0x7);
+	auto result = uint8_t(operand << 1) | cpu->P.Carry;
+	cpu->P.Carry = GetBit(operand, 0x7);
 //	*operand = result;
-	cpu->Write(opd_addr, result);
 	cpu->Write(opd_addr, result);
 	OpRMProc(A, &=, result);
 
@@ -1500,12 +1476,11 @@ OpExeFuncDefine(OP_RRA) {
 	 * carry).
 	 **/
 	// 读的副作用
-	cpu->Read8(opd_addr);
+	uint8_t operand = cpu->Read8(opd_addr);
 
 	// ROR
-	auto tmpOpd = uint8_t(*operand >> 1) | (cpu->P.Carry) << 0x7;
-	cpu->P.Carry = GetBit(*operand, 0);
-	cpu->Write(opd_addr, tmpOpd);
+	auto tmpOpd = uint8_t(operand >> 1) | (cpu->P.Carry) << 0x7;
+	cpu->P.Carry = GetBit(operand, 0);
 	cpu->Write(opd_addr, tmpOpd);
 
 	// ADC
@@ -1528,13 +1503,12 @@ OpExeFuncDefine(OP_SLO) {
 	 * A,Z,C,N
 	 **/
 	// 读的副作用
-	cpu->Read8(opd_addr);
+	uint8_t operand = cpu->Read8(opd_addr);
 
-	cpu->P.Carry = Sign(*operand);
+	cpu->P.Carry = Sign(operand);
 //	*operand <<= 1;
-	cpu->Write(opd_addr, *operand << 1);
-	cpu->Write(opd_addr, *operand << 1);
-	OpRMProc(A, |=, *operand << 1);
+	cpu->Write(opd_addr, operand << 1);
+	OpRMProc(A, |=, operand << 1);
 
 	return self.cycles;
 }
@@ -1546,12 +1520,11 @@ OpExeFuncDefine(OP_SRE) {
 	 * flags: N,Z,C
 	 **/
 	// 读的副作用
-	cpu->Read8(opd_addr);
+	uint8_t operand = cpu->Read8(opd_addr);
 
-	auto result = uint8_t(*operand >> 1);
-	cpu->P.Carry = GetBit(*operand, 0x0);
+	auto result = uint8_t(operand >> 1);
+	cpu->P.Carry = GetBit(operand, 0x0);
 //	*operand = result;
-	cpu->Write(opd_addr, result);
 	cpu->Write(opd_addr, result);
 	OpRMProc(A, ^=, result);
 

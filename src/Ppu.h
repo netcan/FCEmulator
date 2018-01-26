@@ -172,7 +172,7 @@ public:
 	uint8_t getPPUADDR() const { return PPUADDR; }
 	uint8_t getPPUDATA() const { return PPUDATA; }
 	uint8_t getOAMDMA() const { return OAMDMA; }
-	const __PPUMem__& getPPUMEM() const { return mem; }
+	__PPUMem__& getPPUMEM()  { return mem; }
 
 	void pixel(unsigned x, unsigned y);
 	void reload_shift();

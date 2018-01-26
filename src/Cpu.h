@@ -8,10 +8,10 @@
 #pragma once
 #include "Base.h"
 
-#define OpExeFuncArgs const Operation& self, CPU *cpu, uint16_t opd_addr, const uint8_t *operand, uint16_t& updated_pc, bool &crossed_page
+#define OpExeFuncArgs const Operation& self, CPU *cpu, uint16_t opd_addr, uint16_t& updated_pc, bool crossed_page, bool has_operand
 #define OpExeFuncDecl(func_name) static uint8_t func_name(OpExeFuncArgs)
 #define OpExeFuncDefine(func_name) uint8_t CPU::func_name(OpExeFuncArgs)
-#define ExeFunc(op_code_entity, cpu, opt_addr, oprand, updated_pc, crossed_page) op_code_entity->exe(*op_code_entity, cpu, opd_addr, operand, updated_pc, crossed_page)
+#define ExeFunc(op_code_entity, cpu, opt_addr, updated_pc, crossed_page, has_operand) op_code_entity->exe(*op_code_entity, cpu, opd_addr, updated_pc, crossed_page, has_operand)
 inline bool Sign(uint8_t x) { return GetBit(x, 7); };
 
 //class ProcessorStatus;
@@ -180,7 +180,7 @@ private:
 		IRQ = 0xfffe
 	};
 
-	void FetchOperands(OpAddressingMode addressing_mode, uint16_t &opd_addr, const uint8_t *& operand, bool &crossed_page);
+	void FetchOperandAddr(OpAddressingMode addressing_mode, uint16_t &opd_addr, bool &crossed_page, bool &has_operand);
 
 /**************** 指令声明区Begin ****************/
 	OpExeFuncDecl(OP_ASL); // ASL - Arithmetic Shift Left
