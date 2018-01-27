@@ -138,9 +138,10 @@ public:
 	inline void Reset() { PC = Read16(static_cast<uint16_t>(InterruptVector::Reset)); }
 
 	uint8_t Interrupt(uint16_t vec_addr); // 设置中断
+	uint16_t OAMDMA();                        // OAMDMA
 
 	void ShowStatus();
-	uint8_t Execute();
+	uint16_t Execute();
 #ifndef NDEBUG
 	ProcessorStatus &getP() { return P; }
 	uint8_t &getA() { return A; }
@@ -158,7 +159,7 @@ private:
 	__CPUMem__ mem;
 	uint32_t cycles; // 累计执行周期
 	PPU *ppu; // 控制PPU
-	bool nmi, irq;
+	bool nmi, irq, dma;
 	static const Operation** InitOptable();
 	static const Operation **optable;
 

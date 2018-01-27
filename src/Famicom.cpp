@@ -12,7 +12,7 @@
 void Famicom::Run() {
 	using namespace std::chrono;
 	high_resolution_clock::time_point t = high_resolution_clock::now();
-	uint8_t cpu_cycles; // based on cpu
+	uint16_t cpu_cycles; // based on cpu
 	cart.PrintHeader();
 	while(runing && ppu.event.type != SDL_QUIT) {
 //		cpu.ShowStatus();

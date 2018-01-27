@@ -15,6 +15,7 @@ inline bool GetBit(uint16_t value, size_t pos) { return value & (1ul << pos); } 
 inline uint8_t GetUpperBits(uint8_t value) { return (value >> 4) & 0x0f; }
 inline uint8_t GetLowerBits(uint8_t value) { return value & 0x0f; }
 inline uint8_t JointBits(uint8_t upper, uint8_t lower) { return (upper << 4) | (lower & 0x0f); }
+inline uint16_t TO16(uint8_t upper, uint8_t lower) { return (upper << 8) | lower; }
 #define LEN(container) (sizeof(container) / sizeof(container[0]))
 
 template<class MEMType>

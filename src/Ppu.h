@@ -161,7 +161,7 @@ public:
 	void showPalette();
 	void showPatternTable();
 
-	void Execute(uint8_t cpu_cycles); // 执行cycle个周期，这里的cycle是cpu返回的周期，需要*3
+	void Execute(uint16_t cpu_cycles); // 执行cycle个周期，这里的cycle是cpu返回的周期，需要*3
 
 	uint8_t getPPUCTRL() const { return PPUCTRL.ctrl; }
 	uint8_t getPPUMASK() const { return PPUMASK.mask; }

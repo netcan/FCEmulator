@@ -188,6 +188,7 @@ void PPU::v_update() {
 }
 
 void PPU::step() {
+	// 致命bug，之前addr用的是临时变量，导致每次读取该地址上的值是错的
 	uint16_t    scanline = cycles / frame_width,
 				dot = cycles % frame_width;
 
@@ -251,6 +252,6 @@ void PPU::step() {
 
 }
 
-void PPU::Execute(uint8_t cpu_cycles) {
-	for(uint8_t remain_cycles = 3 * cpu_cycles; remain_cycles; --remain_cycles) step();
+void PPU::Execute(uint16_t cpu_cycles) {
+	for(uint16_t remain_cycles = 3 * cpu_cycles; remain_cycles; --remain_cycles) step();
 }

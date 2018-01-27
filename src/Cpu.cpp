@@ -374,13 +374,21 @@ uint8_t CPU::Interrupt(uint16_t vec_addr) {
 	return 7 * 2; // 7个周期，通过延迟nmi长度，将vbl flag clear调整在合适的范围内，通过vbl_clear_time测试
 }
 
+uint16_t CPU::OAMDMA() {
+	for(int i = 0; i < 0x100; ++i)
+		ppu->OAM[(i + ppu->OAMADDR) & 0xff] = mem[TO16(ppu->OAMDMA, i)];
+
+	cycles += 514;
+	return 514;
+}
+
 void CPU::ShowStatus() {
 	printf("PC: %X(%X) A:%X X:%X Y:%X P:%X SP:%X CYC:%d(%d)\n",
 	       PC, mem[PC], A, X, Y, P.P, SP, cycles, ppu->cycles
 	);
 }
 
-uint8_t CPU::Execute() {
+uint16_t CPU::Execute() {
 	// 执行一条指令，返回执行周期数
 	// 取指->译码->执行->更新PC->...
 
@@ -388,6 +396,10 @@ uint8_t CPU::Execute() {
 	if(nmi) {
 		nmi = false;
 		return Interrupt(static_cast<uint16_t>(InterruptVector::NMI));
+	}
+	if(dma) {
+		dma = false;
+		return OAMDMA();
 	}
 
 	// 取指
@@ -473,6 +485,9 @@ void CPU::Write(uint16_t addr, uint8_t value) {
 			ppu->v.s = 0;
 			ppu->mem[ppu->v.addr] = value;
 			ppu->v.addr += ppu->PPUCTRL.I ? 32:1;
+			break;
+		case 0x4014: // OAM DMA
+			dma = true;
 			break;
 	}
 }
