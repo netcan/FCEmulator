@@ -68,6 +68,7 @@ public:
 class PPU {
 private:
 	__PPUMem__ mem;
+
 	union {
 		struct {
 			unsigned NN: 2; // nametable的基地址
@@ -124,6 +125,12 @@ private:
 	bool odd_frame; // 奇偶帧
 	uint32_t frames_count = 0; // 统计帧数
 
+	struct {
+		uint8_t id;
+		uint8_t Y, tileIdx, Attr, X;
+		uint8_t tileL, tileH;
+	} secOAM[8], sprTile[8];                    // 每行最多8个sprites, 每行绘制的像素数据
+
 	uint16_t bgShiftL, bgShiftH;
 	uint8_t bgL, bgH, nt, at;   // nt存放的是pattern table的index
 	uint8_t atShiftL, atShiftH;
@@ -149,6 +156,10 @@ private:
 	CPU *cpu;
 
 	void step();    // 执行一个ppu周期
+	void clear_OAM();
+	void pixel(unsigned x, unsigned y);
+	void eval_sprites(unsigned y);
+	void load_sprites(unsigned y);
 public:
 	friend class __CPUMem__;
 	friend class CPU;
@@ -174,7 +185,6 @@ public:
 	uint8_t getOAMDMA() const { return OAMDMA; }
 	__PPUMem__& getPPUMEM()  { return mem; }
 
-	void pixel(unsigned x, unsigned y);
 	void reload_shift();
 	void h_scroll();
 	void v_scroll();

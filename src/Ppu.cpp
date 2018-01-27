@@ -129,26 +129,6 @@ void PPU::showPatternTable() {
 //		SDL_PollEvent(&event);
 }
 
-void PPU::pixel(unsigned x, unsigned y) {
-	uint8_t draw_palette = 0;
-
-	if(y < 240 && x >= 0 && x < 256) {
-		if (PPUMASK.b && !(!PPUMASK.m && x < 8)) {
-			draw_palette = GetBit(bgShiftH, 15 - fineX) << 1 |
-			               GetBit(bgShiftL, 15 - fineX);
-			if (draw_palette)
-				draw_palette |= (GetBit(atShiftH, 7 - fineX) << 1 |
-				                 GetBit(atShiftL, 7 - fineX)) << 2;
-		}
-
-
-		video_buffer[screen_width * y + x] = palette[mem[0x3F00 + (rendering() ? draw_palette : 0)]];
-	}
-
-	bgShiftL <<= 1; bgShiftH <<= 1;
-	atShiftL = (atShiftL << 1) | atL;
-	atShiftH = (atShiftH << 1) | atH;
-}
 
 void PPU::reload_shift() {
 	bgShiftL = static_cast<uint16_t>((bgShiftL & 0xFF00) | bgL);
@@ -187,12 +167,117 @@ void PPU::v_update() {
 	v.addr = (v.addr & ~0x7BE0) | (t.addr & 0x7BE0);
 }
 
+void PPU::clear_OAM() {
+	for(int i = 0; i < 8; ++i) {
+		secOAM[i].id        = 64;
+		secOAM[i].Y         = 0xFF;
+		secOAM[i].tileIdx   = 0xFF;
+		secOAM[i].Attr      = 0xFF;
+		secOAM[i].X         = 0xFF;
+		secOAM[i].tileL     = 0;
+		secOAM[i].tileH     = 0;
+	}
+}
+
+// 获取下一行用到的8个sprite
+void PPU::eval_sprites(unsigned y) {
+	if(y == 261) return;
+	uint8_t n = 0;
+	uint8_t spr_size = PPUCTRL.H ? 16 : 8;
+	for(int i = 0; i < 64; ++i) {
+		int sprY = y - OAM[i * 4 + 0];
+		if(sprY >= 0 && sprY < spr_size) {
+			secOAM[n].id        = i;
+			secOAM[n].Y         = OAM[i * 4 + 0];
+			secOAM[n].tileIdx   = OAM[i * 4 + 1];
+			secOAM[n].Attr      = OAM[i * 4 + 2];
+			secOAM[n].X         = OAM[i * 4 + 3];
+			if(++n >= 8) {
+				PPUSTATUS.O = 1;
+				break;
+			}
+		}
+	}
+}
+
+// 获取下一行用到的8个sprite的像素值(from pattern table)
+void PPU::load_sprites(unsigned y) {
+	uint8_t spr_size = PPUCTRL.H ? 16 : 8;
+	uint16_t spr_addr = 0;
+	for(int i = 0; i < 8; ++i) {
+		sprTile[i] = secOAM[i];
+		if(secOAM[i].id == 64) continue;
+
+		if(spr_size == 16)  // 偶奇
+			spr_addr = ((secOAM[i].tileIdx & 1) * 0x1000) | ((secOAM[i].tileIdx & ~1) << 4); // 偶数块号
+		else
+			spr_addr = (PPUCTRL.S           * 0x1000) | (secOAM[i].tileIdx << 4);
+
+		unsigned sprY = y - secOAM[i].Y;
+		if(secOAM[i].Attr & 0x80) sprY ^= (spr_size - 1);   // 垂直翻转
+		spr_addr += sprY;
+
+		sprTile[i].tileL = mem[spr_addr];
+		sprTile[i].tileH = mem[spr_addr + 8];
+	}
+}
+
+void PPU::pixel(unsigned x, unsigned y) {
+	uint8_t draw_palette = 0, spr_palette = 0;
+	bool spr_priority = 0;
+
+	if(y < 240 && x >= 0 && x < 256) {
+		// 背景
+		if (PPUMASK.b && !(!PPUMASK.m && x < 8)) {
+			draw_palette = GetBit(bgShiftH, 15 - fineX) << 1 |
+			               GetBit(bgShiftL, 15 - fineX);
+			if (draw_palette)
+				draw_palette |= (GetBit(atShiftH, 7 - fineX) << 1 |
+				                 GetBit(atShiftL, 7 - fineX)) << 2;
+		}
+
+		// Sprites
+		if (PPUMASK.s && !(!PPUMASK.M && x < 8))
+			for(int i = 7; i >= 0; --i) {
+				if(sprTile[i].id == 64) continue; // 空
+				unsigned sprX = x - sprTile[i].X;
+				if(sprX >= 8) continue;
+				if(sprTile[i].Attr & 0x40) sprX ^= 7; // 水平翻转
+				uint8_t p = GetBit(sprTile[i].tileH, 7 - sprX) << 1 |
+				            GetBit(sprTile[i].tileL, 7 - sprX);
+				if(p == 0) continue;
+
+				// sprite 0的非零像素覆盖背景的非零像素
+				if(sprTile[i].id == 0 && draw_palette && x != 255)
+					PPUSTATUS.S = 1;
+				p |= (sprTile[i].Attr & 0x03) << 2;
+				// sprite的palette在0x3f10
+				spr_palette = p + 0x10;
+				// 精灵在背景前面还是后面
+				spr_priority = sprTile[i].Attr & 0x20;
+			}
+		if(spr_palette && (draw_palette == 0 || spr_priority == 0)) draw_palette = spr_palette;
+
+		video_buffer[screen_width * y + x] = palette[mem[0x3F00 + (rendering() ? draw_palette : 0)]];
+	}
+
+	bgShiftL <<= 1; bgShiftH <<= 1;
+	atShiftL = (atShiftL << 1) | atL;
+	atShiftH = (atShiftH << 1) | atH;
+}
+
 void PPU::step() {
 	// 致命bug，之前addr用的是临时变量，导致每次读取该地址上的值是错的
 	uint16_t    scanline = cycles / frame_width,
 				dot = cycles % frame_width;
 
 	if( (scanline >= 0 && scanline < 240) || scanline == 261) { // Visable frame or Pre-render line(dummy scanline)
+		// 精灵
+		switch (dot) {
+			case 1: clear_OAM(); if(scanline == 261) PPUSTATUS.S = PPUSTATUS.O = 0; break;
+			case 257: eval_sprites(scanline); break;
+			case 321: load_sprites(scanline); break;
+		}
 		// 背景
 		switch (dot) {
 			case 2 ... 255:
@@ -247,8 +332,6 @@ void PPU::step() {
 		cycles %= (frame_width * frame_height);
 		odd_frame = !odd_frame;
 	}
-
-
 
 }
 
