@@ -42,7 +42,7 @@ PPU::PPU() {
 							  SDL_WINDOWPOS_CENTERED,
 							  screen_width * 3, screen_height * 3,
 							  SDL_WINDOW_SHOWN);
-	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, screen_width, screen_height);
 	SDL_SetRenderTarget(renderer, texture);
 }

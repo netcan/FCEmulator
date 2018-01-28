@@ -14,7 +14,7 @@ Cartridge::Cartridge() {
 
 bool Cartridge::LoadRomFile(CPU &cpu, PPU &ppu, const std::string &filename) {
 	this->filename = filename;
-	FILE *fp = fopen(filename.c_str(), "r");
+	FILE *fp = fopen(filename.c_str(), "rb");
 	if(fp == NULL) {
 		printf("open file ");
 		perror(filename.c_str());
