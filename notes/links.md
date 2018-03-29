@@ -15,6 +15,12 @@
 - [https://wiki.nesdev.com/w/images/d/d1/Ntsc_timing.png](https://wiki.nesdev.com/w/images/d/d1/Ntsc_timing.png)
 - [https://wiki.nesdev.com/w/index.php/PPU_sprite_evaluation](https://wiki.nesdev.com/w/index.php/PPU_sprite_evaluation)
 
+## Controller
+手柄输入：
+- [https://wiki.nesdev.com/w/index.php/Controller_port_registers](https://wiki.nesdev.com/w/index.php/Controller_port_registers)
+- [https://wiki.nesdev.com/w/index.php/Standard_controller](https://wiki.nesdev.com/w/index.php/Standard_controller)
+
+
 ## Developing
 - gtest框架：[https://github.com/google/googletest/blob/master/googletest/docs/Primer.md](https://github.com/google/googletest/blob/master/googletest/docs/Primer.md)
 - Nes测试rom：[http://www.qmtpro.com/~nes/misc/nestest.txt](http://www.qmtpro.com/~nes/misc/nestest.txt)
