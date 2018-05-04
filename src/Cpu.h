@@ -55,6 +55,7 @@ inline bool Sign(uint8_t x) { return GetBit(x, 7); };
 //};
 
 class PPU;
+class Joypad;
 
 union ProcessorStatus {
 	ProcessorStatus(uint8_t value = 0x34);
@@ -124,6 +125,8 @@ public:
 
 	CPU() : P(0x34), A(0), X(0), Y(0), SP(0xfd), cycles(0), nmi(false), irq(false) { }; // Power Up
 	inline void connectTo(PPU &ppu) { this->ppu = &ppu; mem.PPURegisterMapping(ppu); }
+	inline void connectTo(Joypad &pad) { this->pad = &pad; }
+
 	// 读取一个字节
 	uint8_t Read8(uint16_t addr) const;
 	// 读取一个字
@@ -159,6 +162,7 @@ private:
 	__CPUMem__ mem;
 	uint32_t cycles; // 累计执行周期
 	PPU *ppu; // 控制PPU
+	Joypad *pad; // 外设
 	bool nmi, irq, dma;
 	static const Operation** InitOptable();
 	static const Operation **optable;

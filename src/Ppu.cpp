@@ -23,6 +23,8 @@ const uint32_t PPU::palette[] = {
 PPU::PPU() {
 	cycles = 0;
 
+	cur_time = 0.0;
+
 	// power up status
 	odd_frame = false;
 	PPUCTRL.ctrl = PPUMASK.mask = PPUSTATUS.status = 0;
@@ -314,6 +316,7 @@ void PPU::step() {
 	}
 	else if(scanline == 240 && dot == 0) { // frame end
 //		printf("one frame cpu cycles: %d\n", cpu->cycles);
+		// 绘制一帧
 		SDL_UpdateTexture(texture, NULL, video_buffer, sizeof(uint32_t) * screen_width);
 		SDL_RenderCopy(renderer, texture, NULL, NULL);
 		SDL_RenderPresent(renderer);
@@ -323,6 +326,14 @@ void PPU::step() {
 
 		odd_frame = !odd_frame;
 		++frames_count;
+
+		double _cur_time = getMilliseconds();
+		do {
+			_cur_time = getMilliseconds();
+		} while(_cur_time - cur_time < frame_duration);
+
+		cur_time = _cur_time;
+
 	} else if(scanline == 241 && dot == 1) { // set VBlank flag
 		PPUSTATUS.V = 1;
 		if(PPUCTRL.V) cpu->nmi = true;

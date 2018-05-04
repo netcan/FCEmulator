@@ -147,6 +147,10 @@ private:
 
 	const static uint16_t frame_width = 341, frame_height = 262; // NTSC, 60fps
 	const static uint16_t screen_width = 256, screen_height = 240;
+	constexpr static double frame_duration = 1000.0 / 60; // 每帧的时间
+	// 稳定帧率用的计时器
+	double cur_time;
+
 	SDL_Window *window;
 	SDL_Renderer *renderer;
 	SDL_Texture *texture;
@@ -171,6 +175,10 @@ public:
 
 	void showPalette();
 	void showPatternTable();
+	static double getMilliseconds() {
+		static Uint64 start = SDL_GetPerformanceCounter();
+		return (SDL_GetPerformanceCounter() - start) * 1000.0 / SDL_GetPerformanceFrequency();
+	}
 
 	void Execute(uint16_t cpu_cycles); // 执行cycle个周期，这里的cycle是cpu返回的周期，需要*3
 

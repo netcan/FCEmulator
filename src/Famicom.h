@@ -9,20 +9,17 @@
 #include "Cpu.h"
 #include "Ppu.h"
 #include "Cartridge.h"
+#include "Joypad.h"
 
 class Famicom {
 public:
-	Famicom(const std::string & RomFileName) {
-		cpu.connectTo(ppu);
-		ppu.connectTo(cpu);
-		runing = cart.LoadRomFile(cpu, ppu, RomFileName);
-		cpu.Reset();
-	}
+	Famicom(const std::string & RomFileName);
 	void Run();
 
 private:
 	CPU cpu;
 	PPU ppu;
+	Joypad pad;
 	Cartridge cart;
 	bool runing;
 

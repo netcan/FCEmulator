@@ -7,6 +7,7 @@
  ****************************************************************************/
 #include "Cpu.h"
 #include "Ppu.h"
+#include "Joypad.h"
 
 ProcessorStatus::ProcessorStatus(uint8_t value): P(value) {}
 
@@ -444,6 +445,13 @@ uint8_t CPU::Read8(uint16_t addr) const {
 			}
 			ppu->v.addr += ppu->PPUCTRL.I ? 32:1;
 			break;
+
+		case 0x4016: // 手柄1读
+			ret = pad->read_joypad_status(0);
+			break;
+		case 0x4017: // 手柄2读
+			ret = pad->read_joypad_status(1);
+			break;
 	}
 
 	return ret;
@@ -488,6 +496,9 @@ void CPU::Write(uint16_t addr, uint8_t value) {
 			break;
 		case 0x4014: // OAM DMA
 			dma = true;
+			break;
+		case 0x4016: // 手柄读入设置
+			pad->write_joypad_status(value & 1);
 			break;
 	}
 }
