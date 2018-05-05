@@ -37,7 +37,8 @@ bool Cartridge::LoadRomFile(CPU &cpu, PPU &ppu, const std::string &filename) {
 	// Mapper
 	switch (JointBits(GetUpperBits(header.ROMControl[1]),
 	                  GetUpperBits(header.ROMControl[0]))) {
-		case 0: { // Mapper 0
+		case 0:
+		case 64: { // Mapper 0
 			if(GetBit(header.ROMControl[0], 2)) { // Trainer
 				uint8_t trainer[0x200];
 				fread((void*)trainer, sizeof(trainer), 1, fp);
