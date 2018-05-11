@@ -816,8 +816,8 @@ TEST(PPUTest, test_pattern_table) {
 	CPU cpu;
 	cpu.connectTo(ppu);
 	Cartridge cart;
-//	EXPECT_TRUE(cart.LoadRomFile(cpu, ppu, "./Super Mario Bros (E).nes"));
-	EXPECT_TRUE(cart.LoadRomFile(cpu, ppu, "./nestest.nes"));
+	EXPECT_TRUE(cart.LoadRomFile(cpu, ppu, "./Super Mario Bros (E).nes"));
+//	EXPECT_TRUE(cart.LoadRomFile(cpu, ppu, "./nestest.nes"));
 	cart.PrintHeader();
 	ppu.showPatternTable();
 }

@@ -89,36 +89,36 @@ void PPU::showPalette() {
 
 void PPU::showPatternTable() {
 	// TODO: refactor show pattern table
-//	SDL_SetRenderTarget(renderer, texture);
-//	const uint32_t tile_colors[] = {
-//			palette[0x00],
-//			palette[0x01],
-//			palette[0x02],
-//			palette[0x03],
-//	};
-//
-//
-//	// left and right，绘制PatternTable
-//	for(int j = 0; j < 16; ++j) {
-//		for(int i = 0; i < 32; ++i) {
-//			for(int y = 0; y < 8; ++y) {
-//				uint16_t lower_tile_addr = y | ((i & 0xf) << 0x4) | j << 0x8 | GetBit(i, 4) << 0xC,
-//				         upper_tile_addr = lower_tile_addr | 0x8;
-//				uint8_t lower_tile = mem[lower_tile_addr],
-//						upper_tile = mem[upper_tile_addr];
-//
-//				for (int x = 0; x < 8; ++x) {
-//					uint32_t c = tile_colors[ (GetBit(upper_tile, 7 - x) << 0x1) | GetBit(lower_tile, 7-x) ];
-//					SDL_Color color {static_cast<uint8_t>((c >> 0x8) & 0xFF),
-//					                 static_cast<uint8_t>((c >> 0x4) & 0xFF),
-//					                 static_cast<uint8_t>(c & 0xFF),  0x00};
-//					SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-//					SDL_RenderDrawPoint(renderer, i * 8 + x, j * 8 + y);
-//
-//				}
-//			}
-//		}
-//	}
+	SDL_SetRenderTarget(renderer, texture);
+	const uint32_t tile_colors[] = {
+			palette[0x0d],
+			palette[0x16],
+			palette[0x27],
+			palette[0x18],
+	};
+
+
+	// left and right，绘制PatternTable
+	for(int j = 0; j < 16; ++j) {
+		for(int i = 0; i < 32; ++i) {
+			for(int y = 0; y < 8; ++y) {
+				uint16_t lower_tile_addr = y | ((i & 0xf) << 0x4) | j << 0x8 | GetBit(i, 4) << 0xC,
+				         upper_tile_addr = lower_tile_addr | 0x8;
+				uint8_t lower_tile = mem[lower_tile_addr],
+						upper_tile = mem[upper_tile_addr];
+
+				for (int x = 0; x < 8; ++x) {
+					uint32_t c = tile_colors[ (GetBit(upper_tile, 7 - x) << 0x1) | GetBit(lower_tile, 7-x) ];
+
+					video_buffer[(j * 8 + y) * screen_width + (i * 8 + x)] = c;
+				}
+			}
+		}
+	}
+
+	SDL_UpdateTexture(texture, NULL, video_buffer, sizeof(uint32_t) * screen_width);
+	SDL_RenderCopy(renderer, texture, NULL, NULL);
+	SDL_RenderPresent(renderer);
 //
 //	// 渲染Pattern Table
 //	SDL_Rect board {0, 0, 256, 128};
@@ -127,8 +127,9 @@ void PPU::showPatternTable() {
 //	SDL_RenderCopy(renderer, texture, &board, NULL);
 
 //	SDL_RenderPresent(renderer);
-//	while(event.type != SDL_QUIT)
-//		SDL_PollEvent(&event);
+
+	while(event.type != SDL_QUIT)
+		SDL_PollEvent(&event);
 }
 
 

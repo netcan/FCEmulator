@@ -1,0 +1,438 @@
+\documentclass[a4paper]{ltxdoc}
+\usepackage[UTF8, heading=true, scheme=plain, linespread=1.2, zihao=-4, fontset=fandol]{ctex}
+
+% counterwith重定义问题
+\let\counterwithout\relax
+\let\counterwithin\relax
+
+\usepackage[hidelinks]{hyperref}
+\usepackage{geometry, parskip, seqsplit, fancyhdr, etoolbox, tocloft}
+\usepackage{flafter, chngcntr, caption, multirow, graphicx, enumitem, subcaption}
+\usepackage{minted, tabularx}
+\usepackage[table,xcdraw]{xcolor}
+\usepackage{tikz}
+
+\counterwithin{figure}{section} % 图的编号按section编排
+\counterwithin{table}{section} % 表的编号按section编排
+\DeclareCaptionFormat{smallformat}{\songti \small #1#2#3} % 宋体，五号
+
+\input{macro.tex}
+
+\captionsetup{
+	labelsep=quad, % caption去掉分隔符:
+	textformat=simple,
+	format=smallformat,
+}
+
+\ctexset{
+	space=auto,
+	section = {
+		format = \centering \heiti \sanhao \bfseries,
+		aftername = \hspace{0.5em},
+		afterindent = true,
+	},
+	subsection = {
+		format = \heiti \bfseries,
+		aftername = \hspace{0.4em},
+		afterindent = true,
+	},
+	subsubsection = {
+		format = \songti \bfseries,
+		aftername = \hspace{0.4em},
+		afterindent = true,
+	},
+}
+
+\geometry{left=3cm, right=3cm, top=2.54cm, bottom=2.54cm}
+
+\setmainfont{Times New Roman} % 英文字体
+
+
+\begin{document}
+\include{tex/cover}
+\include{tex/chinese_title}
+\include{tex/english_title}
+\include{tex/statement}
+
+\begin{abstract}
+	NES\footnote{全称为Nintendo Entertainment System}(任天堂娱乐系统)在20世纪80年代是世界上使用最广泛的电子游戏系统，将许多游戏带入了家庭，并为当今电子游戏产业铺平了道路。
+
+	随着科技的发展，许多NES游戏已经无法在当今系统上游玩，然而归功于模拟器的存在，使得这些经典能够延续下去。
+
+	本课题设计并用C++实现一个跨平台\footnote{在Win/Linux/Mac三大平台运行}的NES模拟器，以达到在现代操作系统中能够模拟并运行上个年代的NES游戏。
+
+\end{abstract}
+
+\begin{abstractEn}
+	The NES (Nintendo Entertainment System) was the world's most widely used video game console system in the 1980s, bringing many games to the home and paving the way for today's video game industry.
+
+	With the development of science and technology, many NES games can no longer play on modern operating systems, but thanks to the presence of emulators, these classics can continue.
+
+	This project designs and implements a cross-platform NES emulator in C++ to achieve the ability to emulate and run NES games of the last decade in modern operating systems.
+
+\end{abstractEn}
+
+% 目录
+{
+\tocloftpagestyle{empty}
+\setlength{\cftfignumwidth}{3.5em}
+\setlength{\cfttabnumwidth}{3.5em}
+\clearpage
+\tableofcontents
+
+\clearpage
+\listoffigures
+
+\clearpage
+\listoftables
+
+\setcounter{page}{0}
+}
+
+% 设置页眉
+\newgeometry{left=2.8cm, right=2.8cm, top=3cm, bottom=3cm}
+\fancyhead{}
+\chead{\small 合肥工业大学毕业设计（论文）\vspace{0.3cm}}
+\pagestyle{fancy}
+
+% 正文
+{
+% 重写section指令以便设置section段前1行间距，分页
+\pretocmd{\section}{\clearpage \vspace*{-2.0em}}{}{}
+
+\setlength{\parindent}{2em}
+\setlength{\parskip}{0.5em}
+\setlength{\baselineskip}{22pt}
+
+\section{引言}
+\subsection{课题背景及意义}
+NES是一个8位家用电子游戏终端系统，由任天堂公司开发与制作。最初于1983年7月15日发行于日本名叫Famicom\footnote{也叫红白机，美国称NES}的电子游戏机，后来于1985年发行于纽约，1986到1987年遍布整个美国和欧洲，1987年在澳大利亚发行。
+
+当时在游戏机市场最畅销的时候，NES在1983年的电子游戏行业崩溃\footnote{由于市场饱和，同时又充斥着大量粗制滥造的游戏}之后振兴了美国电子游戏行业。任天堂公司提出了严格的第三方开发者授权的商业模式来确保游戏质量，所有游戏必须通过任天堂的批准，并且第三方厂商每年只能开发一定数量的游戏，后来的SNES\footnote{Super Nintendo Entertainment System, 由任天堂于1990年发行的16位电子游戏机}也采用了这种模式。正是因为这款游戏机的先进技术和严格的授权开发商业模式，使其成为电视游戏机的开山鼻祖。
+
+在2009年时，NES被IGN\footnote{最大最权威的电子游戏评测网站}评为游戏历史上最伟大的电子游戏机\footnote{\url{http://www.ign.com/lists/top-25-consoles/1}}。
+
+为了能够对大学所学知识加以应用，这个课题能够深入理解计算机是如何运行程序的，同时又能将经典游戏继续延续下去；为了能够跨平台流畅运行，还需要写出高兼容性、高性能代码；为了保证开发的效率，需要学习6502汇编，编写单元测试。
+
+\subsection{课题研究现状}
+由于任天堂未公布相关硬件细节，许多NES模拟器开发者通过对硬件逆向工程获得了许多信息，将这些信息整合起来就能够了解内部工作原理，足以实现一个模拟器了。
+
+目前有以下三种方法来实现模拟器：
+\begin{description}[align=left]
+	\item [直接翻译] 读取源程序PC指针上的指令，并翻译成目标机器指令，更新PC指针、内存。由于在执行过程中进行翻译，可能会导致性能问题。
+	\item [静态编译] 将源程序一次性编译到能够在目标系统上运行的程序，然而静态编译无法判断运行时遇到的分支跳转语句。
+	\item [动态编译] 结合以上两种方式，算是一种折中方案。
+\end{description}
+
+最终本课题采取直接翻译的方法来实现模拟器，考虑性能问题，利用C++来实现，以达到最大性能。为保证模拟器能够正确工作、重构，利用Google Unit Test框架进行单元测试。
+
+\subsection{预期成果}
+由于写一个兼容目前所有游戏将超出本课题范围，这里最终成果是能够运行超级马里奥、吃豆人等经典游戏，如图\ref{fig:goal}所示，从技术角度上来讲也极具挑战性，因为它们或多或少依赖一些硬件上的特性，实现起来需要特别处理。
+\begin{figure}[h]
+	\centering
+		\begin{subfigure}[b]{0.45\textwidth}
+			\includegraphics[width=\textwidth]{images/super_mario_bros.png}
+			\caption{超级马里奥兄弟}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.45\textwidth}
+			\includegraphics[width=\textwidth]{images/pac_man.png}
+			\caption{吃豆人}
+		\end{subfigure}
+		\caption{本模拟器模拟的一些经典游戏}
+		\label{fig:goal}
+\end{figure}
+
+比较遗憾的是，本课题还未实现Mapper\footnote{能够对换卡带中的程序ROM到CPU内存中，用来运行大容量游戏}，声音模块，实现它们也将是一件有意思的事情。
+
+\section{任天堂娱乐系统}
+本章主要介绍一下NES的各个硬件模块相关细节。
+
+\subsection{CPU}
+NES采用由Ricoh公司改造的8位6502的MOS处理器，代号2A03/2A07\footnote{2A03用于NTSC版本，而2A07用于PAL版本，本课题采用NTSC制式}。该改造后的CPU不同于通用的6502的是，它能够处理声音，后果是无法处理BCD码\footnote{用4个比特位来表示数字0-9}，除此之外其余部分例如指令集都是一样的。
+
+6502 CPU是一个小端CPU，即高地址存放高字节，低地址存放低字节。举个例子，16进制数0x1234的0x34字节的内存地址是$x$，那么0x12的地址是$(x+1)$。CPU主频为1.79 MHz，基频为21.48 MHz，即主频对基频12分频。
+
+NES使用内存I/O映射技术，使得处理器写入指定内存位置，即可对外设进行通讯（PPU、控制器设备等等）。
+
+\begin{figure}[h]
+	\centering
+	\includegraphics{images/RP2A03E.jpg}
+	\caption{基于6502改造的2A03处理器}
+	\label{fig:2a03}
+\end{figure}
+
+\subsubsection{系统总线}
+如图\ref{fig:system_bus}所示，NES采用三总线结构：
+\begin{description}[align=left]
+	\item [数据总线] 8位双向数据总线，在CPU与RAM、I/O设备之间双向传输（读、写），在程序卡带ROM之间单向传输（只读）。
+	\item [控制总线] 8位控制线，用于控制目标状态是读还是写。
+	\item [地址总线] 16位地址总线，用于指定目标的位置。
+\end{description}
+
+同时，内存被划分为三个部分：
+\begin{itemize}
+	\item 卡带中的ROM区，只读存储器，由MMC组件来访问，扮演Mapper内存块兑换的角色
+	\item CPU的RAM区
+	\item I/O寄存器映射区，用于CPU与外部组件PPU\footnote{图形处理器}、控制器进行通信
+\end{itemize}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=\textwidth]{images/system_bus.png}
+	\caption{NES的系统总线}
+	\label{fig:system_bus}
+\end{figure}
+
+\subsubsection{内存}
+CPU的16位的地址线，能够支持64KB大小的内存，寻址范围：0x0000-0xffff，如表\ref{tab:memory_map}所示。
+
+若游戏ROM只有一块（16KB为单位），则加载到内存0x6000，0x8000这两部分中；若只有两块，则第一块加载到0x6000，第二块加载到0x8000；若游戏ROM超过两块($16KB\times 2 = 32KB$)大小，将使用Mapper内存块对换来决定将哪块加载进内存，本课题暂未实现Mapper。
+\begin{table}[h]
+\centering
+\caption{NES的内存区域}
+\label{tab:memory_map}
+\begin{tabularx}{\textwidth}{|c|l|X|}
+\hline
+\rowcolor[HTML]{8DCDFF}
+地址            & 大小                     & \multicolumn{1}{c|}{\cellcolor[HTML]{8DCDFF}描述}                \\ \hline
+0x0000-0x00FF & 256B                   & Zero Page（也称为零页），内存的第一页，用于快速寻址                                 \\ \hline
+0x0100-0x01FF & 256B                   & 栈区，空递减堆栈                                                             \\ \hline
+0x0200-0x07FF & 1.5KB                  & RAM 区                                                          \\ \hline
+0x0800-0x1FFF & 6KB                    & 这块区域用于对Zero Page镜像3次，意味着，写到0x0000，同时也会写到0x0800, 0x1000, 0x1800 \\ \hline
+0x2000-0x401F &                        & 内存映射IO寄存器，从0x2000-0x2007这8个字节镜像填充满0x2008-0x3FFF区域              \\ \cline{1-1} \cline{3-3}
+0x4020-0x5FFF & \multirow{-2}{*}{16KB} & 扩展区                                                            \\ \hline
+0x6000-0x7FFF & 8KB                    & SRAM，用于访问卡带中的RAM，保存游戏用                                         \\ \hline
+0x8000-0xFFFF & 32KB                   & 这块区域被用于访问卡带的程序ROM，程序ROM以16KB为一个单位块(bank)，一共两块                  \\ \hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{寄存器}
+6502 CPU有6个寄存器，其中3个特殊寄存器，程序计数器（PC）、栈指针（SP）、程序状态寄存器（P），3个通用寄存器，累加器（A）、X、Y寄存器，表\ref{tab:registers}详细描述了各寄存器的作用。
+
+\begin{table}[h]
+\centering
+\caption{6502 CPU各寄存器作用}
+\label{tab:registers}
+\begin{tabularx}{\textwidth}{|c|c|X|}
+\hline
+\rowcolor[HTML]{8DCDFF}
+寄存器名称     & 寄存器位数 & \multicolumn{1}{c|}{\cellcolor[HTML]{8DCDFF}描述}                 \\ \hline
+程序计数器（PC） & 16    & 存放下一条待执行的指令地址                                                   \\ \hline
+栈指针（SP）   & 8     & 指向栈区（0x0100-0x01ff），从0x0100的内存位置作为偏移量，空递减堆栈，也不会检测栈溢出（0x00-0xff） \\ \hline
+程序状态寄存器（P）  & 8     & 受到指令执行后的影响，标记程序状态                                               \\ \hline
+累加器（A）    & 8     & 存储算数、逻辑运算的结果                                                    \\ \hline
+X寄存器      & 8     & 一般做计数器或者用于一些寻址方式的偏移值，或者SP的临时值                                   \\ \hline
+Y寄存器      & 8     & 和X寄存器一样，但是不能用来做SP的临时值                                           \\ \hline
+\end{tabularx}
+\end{table}
+
+8位状态寄存器（P）受到指令执行后的影响，其中每一位都有特别的含义，这些标志位在寄存器中的顺序如图\ref{fig:processor_status}所示：
+\begin{itemize}
+\item 负数标志位（N），当运算结果最高位第7位为1的时候置位，表明负数。
+\item 溢出标志位（V），当两个补码运算产生非法的结果置位，例如正+正为负的时候。
+\item Break指令标志（B），用于标记当BRK指令执行后，产生的IRQ中断（软件中断）。
+\item 十进制模式（D），6502通过设置该标志位切换到BCD模式，由于2A03不支持BCD，所以这位是无效的。SED指令置位，CLD指令复位。
+\item 中断屏蔽标志位（I），通过设置该位可以屏蔽IRQ中断。SEI指令置位，CLI指令复位。
+\item 零标志位（Z），当运算结果为0的时候置位。
+\item 进位标志位（C），当运算结果最高位第7位符号翻转的时候置位。SEC置位，CLC复位。
+\end{itemize}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+    [Node/.style={rectangle, draw=black, thick, minimum size=10mm}]
+	\foreach \x in {0,...,7}
+		\node(P.label.\x) at (7-\x, 1){\x};
+	\node[Node] (P.N) at (0, 0) {N};
+	\node[Node] (P.V) at (1, 0) {V};
+	\node[Node] (P.Null) at (2, 0) {};
+	\node[Node] (P.B) at (3, 0) {B};
+	\node[Node] (P.D) at (4, 0) {D};
+	\node[Node] (P.I) at (5, 0) {I};
+	\node[Node] (P.Z) at (6, 0) {Z};
+	\node[Node] (P.C) at (7, 0) {C};
+\end{tikzpicture}
+\caption{程序状态寄存器P}
+\label{fig:processor_status}
+\end{figure}
+
+\subsubsection{中断}
+中断用于处理硬件、软件触发的信号，表明发生了某个事件需要注意。NES有三种中断：不可屏蔽中断（NMI）、可屏蔽中断（IRQ）、复位（Reset），具体如表\ref{tab:interrupts}所述。
+
+\begin{table}[h]
+\centering
+\caption{NES的中断}
+\label{tab:interrupts}
+\begin{tabularx}{\textwidth}{|c|c|X|}
+\hline
+\rowcolor[HTML]{8DCDFF}
+中断类型  & 向量地址   & \multicolumn{1}{c|}{\cellcolor[HTML]{8DCDFF}描述}           \\ \hline
+NMI   & 0xFFFA & 当PPU中每一帧图像渲染结束时产生VBlank信号触发该中断（PPU的控制寄存器1可设置是否发出VBlank信号） \\ \hline
+Reset & 0xFFFC & 当用户按下复位按钮的时候产生                                            \\ \hline
+IRQ   & 0xFFFE & 可屏蔽中断，受到中断屏蔽标志位(I)的影响，也能被BRK指令（软件中断）触发                    \\ \hline
+\end{tabularx}
+\end{table}
+
+各个中断优先级如下：Reset > NMI > IRQ。在中断产生的时候，执行一个中断一般需要7个机器周期，处理步骤如下：
+\begin{enumerate}
+\item 识别中断请求
+\item 完成当前指令
+\item 将PC，P寄存器入栈（保存现场）
+\item 设置中断屏蔽标志，以防再次中断（关中断）
+\item 将PC设置为位于中断向量表的中断程序地址
+\item 执行中断程序
+\item 执行RTI指令（相当于x86的IRET指令），出栈恢复到PC，P寄存器（恢复现场）
+\item 程序继续执行
+\end{enumerate}
+
+\subsubsection{寻址模式}
+6502有13种寻址模式，介绍如下。
+\begin{description}
+\item [隐式寻址] 操作数隐藏在操作码中无需给出，也就是没有操作数\\
+ \mintinline [breaklines]{asm}{CLC ;清除进位标志位}
+\item [累加器寻址] 只有累加器这一个操作数\\
+ \mintinline [breaklines]{asm}{LSR A ; 对累加器A进行逻辑右移}
+\item [立即数寻址] 操作数为第二个字节指明的常量，在6502汇编中用\#号来表明\\
+ \mintinline [breaklines]{asm}{LDA #10; 将10存放到累加器A中}
+\item [零页寻址] 第二字节为操作数的地址，由于只用一个字节来表示地址，故操作数地址范围在0x00-0xff，即零页，在6502汇编中用\$来表明16进制地址\\
+ \mintinline [breaklines]{asm}{LDA $00; 将内存地址0x00上的存储单元的值作为操作数存放到累加器A中}
+\item [零页X变址寻址] 第二个字节作为基址，加上X寄存器的值作为最终操作数地址\footnote{需要注意的是地址高位不进位，地址始终限制在0x00-0xff范围内}\\
+ \mintinline [breaklines]{asm}{STY $10,X; 将内存地址(0x10 + X)上的存储单元的值存放到寄存器Y中}
+\item [零页Y变址寻址] 和零页X变址一样，只不过是换成了Y寄存器\\
+ \mintinline [breaklines]{asm}{LDX $10,Y; 将内存地址(0x10+Y)上的存储单元的值存放到寄存器X中}
+\item [相对寻址] 分支跳转指令专用，第二个字节操作数（-128到127）加到PC指针上作为跳转目标的地址\\
+ \mintinline [breaklines]{asm}{BEQ $2d; 若结果为0则跳转到PC+0x2d的地址}
+\item [绝对寻址] 操作数地址为第二、三字节组成的16位地址\\
+ \mintinline [breaklines]{asm}{LDA $1234; 将内存地址0x1234上的存储单元的值存放到累加器A}
+\item [绝对X变址寻址] 第二、三字节组成的16位地址加上X寄存器的值作为操作数地址\\
+ \mintinline [breaklines]{asm}{STA $3000,X; 将内存地址(0x3000+X)上的存储单元的值存放到累加器A}
+\item [绝对Y变址寻址] 和绝对X变址一样，只不过是换成了Y寄存器\\
+ \mintinline [breaklines]{asm}{STA $3000,Y; 将内存地址(0x3000+Y)上的存储单元的值存放到累加器A}
+\item [间接寻址] JMP跳转指令专用，第二、三字节组成的16位地址内存单元上的值作为地址\\
+ \mintinline [breaklines]{asm}{JMP $FFFC; 跳转到Reset中断向量}
+\item [零页变址间接寻址]  第二字节为基址，加上X寄存器的值组成的零页内存地址（间址）单元上的值作为操作数地址\\
+ \mintinline [breaklines]{asm}{LDA ($40,X); (0x40+X)作为间址，作为操作数地址取操作数存放到累加器A}
+\item [间接寻址变址]  第二字节为间址，取16位操作数并加上Y作为操作数有效地址\\
+ \mintinline [breaklines]{asm}{LDA ($40),Y; 取0x40, 0x41组成16位地址，加上Y作为操作数有效地址，取操作数存放到累加器A}
+\end{description}
+
+
+\subsubsection{指令集}
+6502有56条不同的指令，各指令因为不同的寻址方式有不同的变种，总共有151个操作码\footnote{还有105个未在CPU官方文档注明的操作码，本课题也对它们进行实现}。指令长度在1到3字节，第一字节为操作码，后面的为操作数。具体的指令集细节可参考文献\cite{6502instruction}，指令可分为下几类：
+\begin{itemize}
+	\item Load/Store指令，读内存数据到寄存器，从寄存器写到内存
+	\item 寄存器转移指令，复制X或Y寄存器内容到累加器（A）中，或相反
+	\item 栈操作指令，入栈或出栈，根据X寄存器的值来读写栈指针
+	\item 逻辑运算指令，对累加器（A）和内存中的值进行逻辑运算
+	\item 算术运算，对寄存器和内存进行算术运算
+	\item 增减指令，对X,Y寄存器或内存的值进行增减运算
+	\item 位移指令，对累加器（A）或内存中的值进行位移操作
+	\item 跳转/调用指令，跳到指定地址继续执行
+	\item 分支指令，当条件满足（P寄存器）的时候跳到指定地址继续执行
+	\item 操作状态寄存器指令，设置状态寄存器的某些标志位
+	\item 系统指令，执行一些系统功能
+\end{itemize}
+
+\subsection{PPU}
+Ricoh公司也提供了2C02/2C07\footnote{2C02用于NTSC版本，2C07用于PAL版本}芯片作为图形处理器PPU，PPU的寄存器映射到CPU内存的0x2000-0x2007和0x4014区，这些特殊的寄存器用来控制图像信息，例如背景滚动、精灵图控制、数据传输等等。
+
+PPU的频率是基频的4分频，即5.37MHz，正好是CPU频率的3倍。
+
+\subsubsection{显存}
+同样的，PPU也有自己的内存，又称作显存（VRAM，Video RAM）。不像CPU，虽然PPU也能寻址64KB范围空间，但是它只有16KB物理内存，其他区域是物理内存的镜像。表\ref{tab:vram}为显存的布局。除了显存，PPU还有一块256字节的OAM专门用来存放精灵信息（如坐标，图块号，是否翻转，颜色等等），每个精灵需要4个字节，一共能存放64个精灵信息。
+
+\begin{table}[h]
+\centering
+\caption{PPU显存布局}
+\label{tab:vram}
+\begin{tabularx}{\textwidth}{|c|c|X|}
+\hline
+\rowcolor[HTML]{8DCDFF}
+地址          & 大小  & \multicolumn{1}{c|}{\cellcolor[HTML]{8DCDFF}描述} \\ \hline
+0x0000-0x0FFF & 4KB & 图块表(Pattern Table)0，存放背景、精灵图块的颜色索引的低两位                       \\ \hline
+0x1000-0x1FFF & 4KB & 图块表1，同上                              \\ \hline
+0x2000-0x23FF & 1KB & 名称表(Nametable)0，存放背景信息                              \\ \hline
+0x2400-0x27FF & 1KB & 名称表1，同上                                  \\ \hline
+0x2800-0x2BFF & 1KB & 名称表2，同上                                  \\ \hline
+0x2C00-0x2FFF & 1KB & 名称表3，同上                                  \\ \hline
+0x3000-0x3EFF &     & 0x2000-0x2EFF的镜像                                  \\ \hline
+0x3F00-0x3F1F & 32B & 调色板，存放背景/精灵的颜色索引                            \\ \hline
+0x3F20-0x3FFF &     & 0x3F00-0x3F1F的镜像                                  \\ \hline
+\end{tabularx}
+\end{table}
+
+NES的调色板一共有56种颜色（用6个比特位来表示索引），然而这些颜色不能同时显示在图形上，显存中有2个调色板（分别位于0x3F00-0x3F0F, 0x3F10-0x3F1F）：背景调色板、精灵调色板。每个调色板能够存放16种颜色，因为存放的是索引，所以也只需要用6个比特位来表达一种颜色，由于这两个调色板某些字节被镜像，最终只能显示25种颜色。
+
+显存中的图块表区域，用来存放背景、精灵图块的调色板指针的低2位，超级马里奥的图块表如图\ref{fig:pattern_table}。背景、精灵图块颜色信息需要一共需要4个比特位来存放。图块表一共有2个，每个4KB，图块的尺寸为8x8像素，每行8个像素点用一个字节来表示调色板指针的一位，由于图块表只存放颜色索引的低2位，所以需要16字节大小来存放一个图块，一个图块表能存放256块，图\ref{fig:pattern_table}按左右顺序排列了这2个图块表。
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=\textwidth]{images/pattern_table.png}
+	\caption{超级马里奥的图块表}
+	\label{fig:pattern_table}
+\end{figure}
+
+而背景、精灵图块的调色板指针的高2位分别存放于名称表中的属性表、OAM中。
+
+虽然有4块命名表，每块1KB，但实际上能用的只有2块，另外2块做镜像用，从而形成了垂直镜像、水平镜像等模式。命名表用来存放背景信息，每个字节表明图块表中的块号，由PPUCTRL控制寄存器来选择哪一个图块表。命名表由32x30=960块组成，形成256x240大小的背景图形，一共占用960字节，而剩下的64字节区域也叫属性表，用于保存背景图块的调色板指针的高两位。
+
+OAM用4个字节来描述一个精灵信息，第一个字节描述精灵的Y坐标，第二个字节描述精灵的图块号，第三个字节描述精灵的调色板指针的高两位、是否水平、垂直翻转，是否显示，最后一个字节描述精灵的X坐标。OAM也支持DMA，可高效地将CPU内存数据写入OAM中。通过写入OAMDMA寄存器来触发，写入$N$将会从CPU内存$N\times 0x100$起始地址开始连续对OAM写入256个字节，这期间将会发生周期挪用现象，即CPU无法访存，也将无法进一步获取指令信息，直到DMA过程完成。
+
+\subsubsection{寄存器}
+PPU的各个寄存器主要作用见表\ref{tab:ppu_registers}。
+
+\begin{table}[h]
+\centering
+\caption{PPU的各个寄存器主要作用}
+\label{tab:ppu_registers}
+\begin{tabularx}{\textwidth}{|c|c|c|X|}
+\hline
+\rowcolor[HTML]{8DCDFF}
+\hline
+\rowcolor[HTML]{8DCDFF}
+寄存器名      & 地址     & 属性  & \multicolumn{1}{c|}{\cellcolor[HTML]{8DCDFF}主要用途} \\ \hline
+PPUCTRL   & 0x2000 & 写   & 用于控制是否产生NMI中断、精灵的高度、背景块的图案表选择、名称表选择               \\ \hline
+PPUMASK   & 0x2001 & 写   & 是否显示背景、精灵                                         \\ \hline
+PPUSTATUS & 0x2002 & 读   & 描述PPU的状态，是否处于VBlank                               \\ \hline
+OAMADDR   & 0x2003 & 写   & OAM读写地址                                           \\ \hline
+OAMDATA   & 0x2004 & 读、写 & OAM读写数据                                           \\ \hline
+PPUSCROLL & 0x2005 & 写两次 & 背景滚动的位置（用于产生横、竖向滚动效果）                             \\ \hline
+PPUADDR   & 0x2006 & 写两次 & PPU读写地址                                           \\ \hline
+PPUDATA   & 0x2007 & 读、写 & PPU读写数据                                           \\ \hline
+OAMDMA    & 0x4014 & 写   & DMA                                               \\ \hline
+\end{tabularx}
+\end{table}
+
+PPUSCROLL, PPUADDR共用内部寄存器\cite{ppuscrolling}，各需要写两次生效，前者依次写摄像机的x, y坐标，后者依次写高、低地址。
+
+\subsubsection{渲染}
+
+}
+
+% 参考文献
+{
+\clearpage % 分页
+\phantomsection % 使得hyperref目录能够跳转到正确的位置
+\addcontentsline{toc}{section}{参考文献} % 添加到目录中
+\nocite{*} % 添加所有文献
+%\bibliographystyle{gbt7714-2005} % 样式
+\bibliography{bib/ref.bib}    % 文献数据库
+\bibliographystyle{unsrt} % 样式
+}
+
+% 致谢
+\begin{acknowledge}
+	感谢我的母校，由于高考志愿填报问题导致我不能如愿以偿地进入本校计算机科学与技术专业进行学习，在食品与科学工程的两年里，依旧不忘初心地自学我所爱。凭借特长在各位老师、领导的支持与厚爱下转入信息工程系，让我得以深入学习，最后从事一份自己所感兴趣的工作。
+
+	感谢我的指导老师安鑫老师，安鑫老师严谨的治学态度和精益求精的工作作风，深深地感染着我，使我终生受用。从课题的开题到论文的最终完成，安鑫老师都始终给予我细心的指导，在这期间向我提出了许多宝贵意见和建议。当我遇到困难时，都是安鑫老师给我鼓励与指引，使我能够克服重重困难。在此谨向安鑫老师致以诚挚的谢意。
+
+	感谢支持和关心我的同学们，朋友职愈博、曹鑫，在毕业设计遇到问题能够提供建议与帮助，使我顺利地完成毕业设计。
+
+	最后，感谢我的家人，感谢你们在我的学习生活中所给予的支持和理解，让我能够不断进取。没有你们，就没有我的今天，你们的支持与鼓励，永远是支撑我前进的最大动力。
+\end{acknowledge}
+
+% 附录，必要时
+\begin{appendix}
+\end{appendix}
+
+\end{document}
