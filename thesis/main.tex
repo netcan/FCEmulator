@@ -124,17 +124,17 @@ NES是一个8位家用电子游戏终端系统，由任天堂公司开发与制�
 	\item [动态编译] 结合以上两种方式，算是一种折中方案。
 \end{description}
 
-最终本课题采取直接翻译的方法来实现模拟器，考虑性能问题，利用C++来实现，以达到最大性能。为保证模拟器能够正确工作、重构，利用Google Unit Test框架进行单元测试。
+最终本课题采取直接翻译的方法来实现模拟器，考虑性能问题，利用C++来实现，以达到最大性能；为了显示图形、处理键盘输入，利用SDL库绘图、响应；为保证模拟器能够正确工作、重构，利用Google Test框架来单元测试。为了方便跨平台编译，使用CMake自动化构建。
 
 \subsection{预期成果}
 由于写一个兼容目前所有游戏将超出本课题范围，这里最终成果是能够运行超级马里奥、吃豆人等经典游戏，如图\ref{fig:goal}所示，从技术角度上来讲也极具挑战性，因为它们或多或少依赖一些硬件上的特性，实现起来需要特别处理。
 \begin{figure}[h]
 	\centering
-		\begin{subfigure}[b]{0.45\textwidth}
+		\begin{subfigure}[b]{0.48\textwidth}
 			\includegraphics[width=\textwidth]{images/super_mario_bros.png}
 			\caption{超级马里奥兄弟}
 		\end{subfigure}
-		\begin{subfigure}[b]{0.45\textwidth}
+		\begin{subfigure}[b]{0.48\textwidth}
 			\includegraphics[width=\textwidth]{images/pac_man.png}
 			\caption{吃豆人}
 		\end{subfigure}
@@ -145,7 +145,7 @@ NES是一个8位家用电子游戏终端系统，由任天堂公司开发与制�
 比较遗憾的是，本课题还未实现Mapper\footnote{能够对换卡带中的程序ROM到CPU内存中，用来运行大容量游戏}，声音模块，实现它们也将是一件有意思的事情。
 
 \section{任天堂娱乐系统}
-本章主要介绍一下NES的各个硬件模块相关细节。
+本章主要介绍一下NES的各个硬件模块的相关细节。
 
 \subsection{CPU}
 NES采用由Ricoh公司改造的8位6502的MOS处理器，代号2A03/2A07\footnote{2A03用于NTSC版本，而2A07用于PAL版本，本课题采用NTSC制式}。该改造后的CPU不同于通用的6502的是，它能够处理声音，后果是无法处理BCD码\footnote{用4个比特位来表示数字0-9}，除此之外其余部分例如指令集都是一样的。
@@ -171,7 +171,7 @@ NES使用内存I/O映射技术，使得处理器写入指定内存位置，即�
 
 同时，内存被划分为三个部分：
 \begin{itemize}
-	\item 卡带中的ROM区，只读存储器，由MMC组件来访问，扮演Mapper内存块兑换的角色
+	\item 卡带中的ROM区，只读存储器，由MMC组件\footnote{Memory Mapper Chip，也称为Mapper}来访问，扮演内存块兑换的角色
 	\item CPU的RAM区
 	\item I/O寄存器映射区，用于CPU与外部组件PPU\footnote{图形处理器}、控制器进行通信
 \end{itemize}
@@ -339,7 +339,7 @@ Ricoh公司也提供了2C02/2C07\footnote{2C02用于NTSC版本，2C07用于PAL�
 PPU的频率是基频的4分频，即5.37MHz，正好是CPU频率的3倍。
 
 \subsubsection{显存}
-同样的，PPU也有自己的内存，又称作显存（VRAM，Video RAM）。不像CPU，虽然PPU也能寻址64KB范围空间，但是它只有16KB物理内存，其他区域是物理内存的镜像。表\ref{tab:vram}为显存的布局。除了显存，PPU还有一块256字节的OAM专门用来存放精灵信息（如坐标，图块号，是否翻转，颜色等等），每个精灵需要4个字节，一共能存放64个精灵信息。
+同样的，PPU也有自己的内存，又称作显存（VRAM，Video RAM）。不像CPU，虽然PPU也能寻址64KB范围空间，但是它只有16KB物理内存，其他区域是物理内存的镜像。表\ref{tab:vram}为显存的布局。除了显存，PPU还有一块256字节的OAM专门用来存放精灵信息（如坐标，图块号，垂直、水平翻转，颜色等等），每个精灵需要4个字节，一共能存放64个精灵信息。
 
 \begin{table}[h]
 \centering
@@ -363,7 +363,7 @@ PPU的频率是基频的4分频，即5.37MHz，正好是CPU频率的3倍。
 
 NES的调色板一共有56种颜色（用6个比特位来表示索引），然而这些颜色不能同时显示在图形上，显存中有2个调色板（分别位于0x3F00-0x3F0F, 0x3F10-0x3F1F）：背景调色板、精灵调色板。每个调色板能够存放16种颜色，因为存放的是索引，所以也只需要用6个比特位来表达一种颜色，由于这两个调色板某些字节被镜像，最终只能显示25种颜色。
 
-显存中的图块表区域，用来存放背景、精灵图块的调色板指针的低2位，超级马里奥的图块表如图\ref{fig:pattern_table}。背景、精灵图块颜色信息需要一共需要4个比特位来存放。图块表一共有2个，每个4KB，图块的尺寸为8x8像素，每行8个像素点用一个字节来表示调色板指针的一位，由于图块表只存放颜色索引的低2位，所以需要16字节大小来存放一个图块，一个图块表能存放256块，图\ref{fig:pattern_table}按左右顺序排列了这2个图块表。
+显存中的图块表区域，用来存放背景、精灵图块的调色板指针的低2位。背景、精灵图块颜色信息需要一共需要4个比特位来存放。图块表一共有2个，每个4KB，图块的基本尺寸为8x8像素，每行8个像素点用一个字节来表示调色板指针的一位，由于图块表只存放颜色索引的低2位，所以需要16字节大小来存放一个图块，一个图块表能存放256块，图\ref{fig:pattern_table}按左右顺序排列了这2个图块表(16x16=256块)。背景图块有8x8这一种模式，而精灵图块支持8x8, 8x16\footnote{由2个8x8基本图块组成}两种模式。
 
 \begin{figure}[h]
 	\centering
@@ -374,7 +374,15 @@ NES的调色板一共有56种颜色（用6个比特位来表示索引），然�
 
 而背景、精灵图块的调色板指针的高2位分别存放于名称表中的属性表、OAM中。
 
-虽然有4块命名表，每块1KB，但实际上能用的只有2块，另外2块做镜像用，从而形成了垂直镜像、水平镜像等模式。命名表用来存放背景信息，每个字节表明图块表中的块号，由PPUCTRL控制寄存器来选择哪一个图块表。命名表由32x30=960块组成，形成256x240大小的背景图形，一共占用960字节，而剩下的64字节区域也叫属性表，用于保存背景图块的调色板指针的高两位。
+虽然有4块名称表用于存放背景信息，每块1KB，但实际上能用的只有2块，另外2块做镜像用，从而形成了垂直镜像、水平镜像等模式。名称表的每个字节表明图块表中的块号，由PPUCTRL寄存器来选择哪一个图块表。如图\ref{fig:nametable}所示，名称表由32x30=960块组成，形成256x240大小的背景图形，一共占用960字节，而剩下的64字节区域也叫属性表，用于保存背景图块的调色板指针的高两位。
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=\textwidth]{images/nametable.png}
+	\caption[超级马里奥的名称表]{超级马里奥的名称表，背景中的每一个方块由图块表中的8x8图块组成，而左上角标注的0,1,2,3由属性表中的一个字节来描述背景图块调色板指针的高两位}
+	\label{fig:nametable}
+\end{figure}
+
 
 OAM用4个字节来描述一个精灵信息，第一个字节描述精灵的Y坐标，第二个字节描述精灵的图块号，第三个字节描述精灵的调色板指针的高两位、是否水平、垂直翻转，是否显示，最后一个字节描述精灵的X坐标。OAM也支持DMA，可高效地将CPU内存数据写入OAM中。通过写入OAMDMA寄存器来触发，写入$N$将会从CPU内存$N\times 0x100$起始地址开始连续对OAM写入256个字节，这期间将会发生周期挪用现象，即CPU无法访存，也将无法进一步获取指令信息，直到DMA过程完成。
 
@@ -391,7 +399,7 @@ PPU的各个寄存器主要作用见表\ref{tab:ppu_registers}。
 \hline
 \rowcolor[HTML]{8DCDFF}
 寄存器名      & 地址     & 属性  & \multicolumn{1}{c|}{\cellcolor[HTML]{8DCDFF}主要用途} \\ \hline
-PPUCTRL   & 0x2000 & 写   & 用于控制是否产生NMI中断、精灵的高度、背景块的图案表选择、名称表选择               \\ \hline
+PPUCTRL   & 0x2000 & 写   & 用于控制是否产生NMI中断、精灵的高度、背景块的图块表选择、名称表选择               \\ \hline
 PPUMASK   & 0x2001 & 写   & 是否显示背景、精灵                                         \\ \hline
 PPUSTATUS & 0x2002 & 读   & 描述PPU的状态，是否处于VBlank                               \\ \hline
 OAMADDR   & 0x2003 & 写   & OAM读写地址                                           \\ \hline
@@ -406,6 +414,97 @@ OAMDMA    & 0x4014 & 写   & DMA                                               \
 PPUSCROLL, PPUADDR共用内部寄存器\cite{ppuscrolling}，各需要写两次生效，前者依次写摄像机的x, y坐标，后者依次写高、低地址。
 
 \subsubsection{渲染}
+PPU绘制一帧需要341x262=89342个PPU时钟周期，可分为三个阶段：渲染、HBlank、VBlank，具体如图\ref{fig:rendering}所示。
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=\textwidth]{images/vblank_hblank.png}
+	\caption{PPU的渲染}
+	\label{fig:rendering}
+\end{figure}
+
+渲染部分大小为256x240，按行渲染，期间每一个PPU时钟周期计算并绘制一个像素点，同时会获取背景块信息、更新当前绘制坐标等等\cite{ppurendering}。
+
+在渲染期间每一行后的HBlank阶段，会取出下一行绘制所需要的精灵信息。\cite{evalsprite}
+
+当渲染完成后，会经过VBlank阶段，根据PPUCTRL寄存器来决定是否产生NMI中断，从而进入中断程序，由中断程序来更新名称表、OAM内容，从而更新下一帧所需要的背景、精灵信息。
+
+\subsection{标准控制器}
+图\ref{fig:pad}为标准控制器，是NES的输入设备，没有它也就没法游玩游戏了。控制器有8个键，上、下、左、右、选择、确认、A、B，采用8位移位寄存器实现，每一个比特位代表一个键是否按下。默认情况下支持两个控制器，分别映射至内存0x4016, 0x4017位置，每次读一位并且移动一位。通过对0x4016写来决定是否重载这两个移位寄存器。
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.6\textwidth]{images/pad.jpg}
+	\caption{NES的标准控制器}
+	\label{fig:pad}
+\end{figure}
+
+\subsection{卡带}
+图\ref{fig:cartridge}展示了NES用的游戏卡带，NES游戏程序ROM分发于卡带中，最原始的卡带由PCB板和ROM芯片组成。
+
+从图\ref{fig:cartridge}中可以看到ROM有两块，分别为CHR ROM和PRG ROM，前者用于存放图像数据（PPU的图块表部分），后者用于存放游戏程序（CPU内存的0x8000-0xFFFF区）。
+
+\begin{figure}[h]
+	\centering
+	\includegraphics{images/cartridge.jpg}
+	\caption{NES的卡带}
+	\label{fig:cartridge}
+\end{figure}
+
+\subsubsection{Mapper}
+由于16位地址总线问题，导致程序尺寸被限制在32KB（而图像数据仅有8KB），随着科技进步，ROM存储器越来越便宜，容量越来越大，游戏的需求也越来越高，于是任天堂提出了MMC芯片，也就是Mapper，通过内存块\footnote{以16KB为单位}对换技术\footnote{准确来说是Bank Switching}，使得游戏容量能够突破限制。而其他生产商也研发了自己的Mapper，形成了多种多样的形式，例如能支持不同的块尺寸、支持RAM等等，从而可以为游戏添加存档功能。
+
+\subsubsection{iNES文件格式}
+通过一些拷贝装置，可将卡带上的数据拷贝到电脑硬盘上，然而仅仅有这些数据还是不行的，需要一种文件格式来描述。最初由Marat Fayzullin开发了一款名叫iNES的模拟器，他提出的文件格式也在今后的NES模拟器中使用最广泛，后缀名为.nes。iNES文件格式记录了Mapper类型、ROM大小、ROM数据、NTSC/PAL制式等信息。
+
+\section{相关技术介绍}
+\subsection{Simple DirectMedia Layer}
+SDL(Simple DirectMedia Layer)是一个通过OpenGL和Direct3D提供了对声音、键盘、鼠标、手柄、图形硬件访问接口的跨平台开发库。广泛用于视频播放器、模拟器、游戏开发中。
+
+SDL由C语言写成，可在C/C++中使用，同时也支持其他语言，例如Python。
+
+由SDL开发的一些经典作品有：DOTA2、求生之路2、QEMU等。
+
+\begin{figure}[h]
+	\centering
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{images/dota2.jpg}
+			\caption{DOTA2}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{images/left4dead2.jpg}
+			\caption{求生之路2}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.3\textwidth}
+			\includegraphics[width=\textwidth]{images/qemu.png}
+			\caption{QEMU}
+		\end{subfigure}
+		\caption{由SDL开发的一些经典作品}
+		\label{fig:sdl}
+\end{figure}
+
+本课题使用SDL来绘图、处理键盘输入事件、定时器。
+
+\subsection{Google Test}
+Google Test是一个跨平台C++单元测试框架，编写测试样例也相当简单，使得调试过程相当具体，满足了许多开发人员的需求。
+
+使用Google Test框架的经典项目有：Chrome、LLVM、OpenCV等。
+
+需要注意几个术语可能会混淆，由于历史原因，Google Test将同一组件下相关的测试称为测试用例（Test Case），而目前出版的包括国际软件测试资质认证委员会\footnote{International Software Testing Qualifications Board (ISTQB)}和许多软件测试书籍在内，将这个称为测试套件（Test Suite）。Google Test将指定程序输入验证输出这个行为称作测试（Test），而ISTQB将这个称为测试用例（Test Case）。
+
+本课题使用Google Test来验证各个程序模块（CPU/PPU等）是否正确工作。
+
+\subsection{CMake}
+CMake是一个跨平台的自动化构建系统，通过配置文件来控制整个构建过程，和Linux/Unix下的Makefile相似，配置文件名为CMakeLists.txt。
+
+CMake并不直接构建出最终的程序，而是生成构建文件（Linux/Unix下的Makefile或者Windows VC++下的projects/workspace），再用一般的构建方式生成程序。
+
+使用CMake的经典项目有：LLVM/CLang、MySQL、OpenCV、Qt等。
+
+本课题使用CMake来产生跨平台构建文件。
+\subsection{Valgrind}
+Valgrind是一个用于检测内存泄露、性能分析的程序。Valgrind发行版目前包含了六个工具：一个内存错误检测器、两个线程错误检测器、一个缓存和分支预测分析器、一个调用图分析器、一个堆分析器，能够跨平台运行。
+
+本课题使用Valgrind的cachegrind和callgrind工具来进行性能优化。由于这是一个命令行工具，这里推荐使用KCachegrind对Valgrind输出日志进行可视化，方便分析。
 
 }
 
