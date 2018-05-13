@@ -392,7 +392,6 @@ void CPU::ShowStatus() {
 uint16_t CPU::Execute() {
 	// 执行一条指令，返回执行周期数
 	// 取指->译码->执行->更新PC->...
-
 	// 中断
 	if(nmi) {
 		nmi = false;

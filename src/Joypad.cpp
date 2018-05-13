@@ -43,7 +43,7 @@ uint8_t Joypad::read_joypad_status(int n) {
 }
 
 void Joypad::write_joypad_status(bool v) {
-	if(strobe && !v)
+	if(strobe && !v) // 下降沿重载
 		for(int i = 0; i < 2; ++i)
 			joypad_bits[i] = get_joypad_status(i);
 

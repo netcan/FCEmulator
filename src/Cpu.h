@@ -273,11 +273,10 @@ private:
 
 };
 
-struct Operation { // 指令
-	using ExeFunc = uint8_t (*)(OpExeFuncArgs);
-	uint8_t code;
-	CPU::OpAddressingMode addressing_mode;
-	uint8_t bytes, cycles;
-	ExeFunc exe; // 返回具体执行的cycles数目
+struct Operation {                              // 指令
+	uint8_t code;                               // 8位操作码
+	CPU::OpAddressingMode addressing_mode;      // 寻址模式
+	uint8_t bytes, cycles;                      // 操作码的长度、周期数
+	uint8_t (*exe)(OpExeFuncArgs);              // 令的具体动作，返回执行的cycles数目
 };
 
