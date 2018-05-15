@@ -164,6 +164,16 @@ private:
 	void pixel(unsigned x, unsigned y);
 	void eval_sprites(unsigned y);
 	void load_sprites(unsigned y);
+	void reload_shift();
+	void h_scroll();
+	void v_scroll();
+	void h_update();
+	void v_update();
+	inline bool rendering() { return PPUMASK.s | PPUMASK.b; }
+	inline uint16_t get_nt_addr() { return 0x2000 | (v.addr & 0x0FFF); }
+	inline uint16_t get_at_addr() { return 0x23C0 | (v.NN << 10) | ((v.coarseY / 4) << 3) | (v.coarseX / 4); }
+	inline uint16_t get_bg_tile_addr() { return (PPUCTRL.B * 0x1000) | (nt * 16) | v.fineY; }
+
 public:
 	friend class __CPUMem__;
 	friend class CPU;
@@ -193,14 +203,5 @@ public:
 	uint8_t getOAMDMA() const { return OAMDMA; }
 	__PPUMem__& getPPUMEM()  { return mem; }
 
-	void reload_shift();
-	void h_scroll();
-	void v_scroll();
-	void h_update();
-	void v_update();
-	inline bool rendering() { return PPUMASK.s | PPUMASK.b; }
-	inline uint16_t get_nt_addr() { return 0x2000 | (v.addr & 0x0FFF); }
-	inline uint16_t get_at_addr() { return 0x23C0 | (v.NN << 10) | ((v.coarseY / 4) << 3) | (v.coarseX / 4); }
-	inline uint16_t get_bg_tile_addr() { return (PPUCTRL.B * 0x1000) | (nt * 16) | v.fineY; }
 };
 

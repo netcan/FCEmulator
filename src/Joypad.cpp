@@ -33,8 +33,7 @@ uint8_t Joypad::get_joypad_status(int n) {
 
 uint8_t Joypad::read_joypad_status(int n) {
 	// 若S为高电平，则读取A键，由于硬件问题高第二位为1
-	if(strobe)
-		return 0x40 | (get_joypad_status(n) & 1);
+	if(strobe) return 0x40 | (get_joypad_status(n) & 1);
 
 	// 每次读取一位并右移一位
 	uint8_t key_status = 0x40 | (joypad_bits[n] & 1);

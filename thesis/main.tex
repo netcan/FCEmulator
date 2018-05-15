@@ -429,7 +429,7 @@ PPU绘制一帧需要341x262=89342个PPU时钟周期，可分为三个阶段：�
 当渲染完成后，会经过VBlank阶段，根据PPUCTRL寄存器来决定是否产生NMI中断，从而进入中断程序，由中断程序来更新名称表、OAM内容，从而更新下一帧所需要的背景、精灵信息。
 
 \subsection{标准控制器}
-图\ref{fig:pad}为标准控制器，是NES的输入设备，没有它也就没法游玩游戏了。控制器有8个键，上、下、左、右、选择、确认、A、B，采用8位移位寄存器实现，每一个比特位代表一个键是否按下。默认情况下支持两个控制器，分别映射至内存0x4016, 0x4017位置，每次读一位并且移动一位。通过对0x4016写入下降沿电压来触发重载这两个移位寄存器。
+图\ref{fig:pad}为标准控制器（手柄），是NES的输入设备，没有它也就没法游玩游戏了。控制器有8个键，上、下、左、右、选择、确认、A、B，采用8位移位寄存器实现，每一个比特位代表一个键是否按下。默认情况下支持两个控制器，分别映射至内存0x4016, 0x4017位置，每次读一位并且移动一位。通过对0x4016写入下降沿电压来触发重载这两个移位寄存器。
 
 \begin{figure}[h]
 	\centering
@@ -617,7 +617,7 @@ private:
 在卡带将程序数据加载进内存0x8000位置时，可如下调用：
 \begin{cppcode}
 __CPUMem__::iterator cpuRamIt = cpu.mem.begin();
-std::copy(PRGRomData, PRGRomData + sizeof(PRGRomData), cpuRamIt + 0x8000); 
+std::copy(PRGRomData, PRGRomData + sizeof(PRGRomData), cpuRamIt + 0x8000);
 \end{cppcode}
 
 \subsubsection{指令类定义}
@@ -761,7 +761,7 @@ OpExeFuncDefine(OP_RTI) {
 
 \subsection{PPU}
 \subsubsection{内存类定义}
-PPU的内存类和CPU的基本一致。
+PPU的内存类和CPU的基本一致，核心代码如下：
 \begin{cppcode}
 class __PPUMem__ {
 private:
@@ -784,7 +784,273 @@ public:
 	iterator end() { return iterator(this, 0x4000); }
 };
 \end{cppcode}
+\subsubsection{主类定义}
+如下代码主要列出了PPU类的寄存器、内部寄存器，以及主要工作流程的方法。
+\begin{cppcode}
+class PPU {
+private:
+	uint32_t cycles; // PPU的时钟周期数，是cpu的三倍
+	__PPUMem__ mem;
+	PPURegister PPUCTRL, PPUMASK, PPUSTATUS, // PPU通用寄存器
+				OAMADDR, OAMDATA, PPUSCROLL,
+				PPUADDR, PPUDATA, OAMDMA;
+	uint8_t OAM[0x100]; // 256B的OAM精灵存储区
+	const static uint16_t frame_width = 341, frame_height = 262; // NTSC, 60fps
+	const static uint16_t screen_width = 256, screen_height = 240; // 每帧图像的大小
+	constexpr static double frame_duration = 1000.0 / 60; // 每帧的时间
+	double cur_time; // 稳定帧率用的计时器
+	uint32_t video_buffer[frame_width * frame_height]; // 当前帧的像素数据
+	// 以下均为内部寄存器、存储区
+	uint16_t v, t;             // PPU 内部寄存器v, t
+	uint8_t fineX;             // 内部寄存器，8x8图块中的X列
+	bool w;                    // 内部寄存器，用于判断第一次、第二次读写
+	bool odd_frame;            // 奇偶帧
+	uint32_t frames_count = 0; // 统计帧数
+	struct {
+		uint8_t id;
+		uint8_t Y, tileIdx, Attr, X;     // 当前行绘制的精灵的X, Y坐标、块号、属性
+		uint8_t tileL, tileH;            // 精灵图块数据
+	} secOAM[8], sprTile[8];             // 内部寄存器，保存渲染的精灵，每行最多8个精灵
+	uint16_t bgShiftL, bgShiftH;         // 内部移位寄存器，存放当前行2块的背景图块像素数据
+	uint8_t bgL, bgH, nt, at;            // 存放当前行背景图块的像素数据，nt存放的是图块表中的编号，at是背景图块的调色板指针高两位
+	uint8_t atShiftL, atShiftH;          // 内部移位寄存器，存放当前行2块的背景图块的调色板指针高两位
+	bool atL, atH;                       // L, H组成当前行当前背景图块的调色板指针高两位
+	uint16_t internal_load_addr;         // PPU读取像素数据用的地址
+	uint8_t PPUDATA_buffer;              // 读的数据缓冲区
+	static const uint32_t palette[0x40]; // 背景、精灵调色板
+	CPU *cpu;
+	// 工作流程
+	void step();                         // 执行一个ppu周期
+	void pixel(unsigned x, unsigned y);  // 绘制渲染区的一个像素点
+	void clear_OAM();                    // 清除OAM`
+	void eval_sprites(unsigned y);       // 获得下一行的8个精灵信息
+	void load_sprites(unsigned y);       // 存储下一行的8个精灵信息
+}
+\end{cppcode}
+\subsubsection{主要工作流程实现}
+PPU绘图的实现主要调用了step()函数，每一个PPU时钟周期执行一次，根据当前不同的行数、列数进行不同的操作（取数据、计算像素值）：
+\begin{cppcode}
+void PPU::step() {
+	// 根据当前PPU总周期数来计算行数、列数
+	uint16_t    scanline = cycles / frame_width,
+				dot = cycles % frame_width;
+	if( (scanline >= 0 && scanline < 240) || scanline == 261) {
+		// 精灵
+		switch (dot) {
+			case 1: clear_OAM(); if(scanline == 261) PPUSTATUS.S = PPUSTATUS.O = 0; break;
+			case 257: eval_sprites(scanline); break;
+			case 321: load_sprites(scanline); break;
+		}
+		// 背景
+		switch (dot) {
+			case 2 ... 255:
+			case 322 ... 337:
+				pixel(dot - 2, scanline);
+				... // 省略一些代码
+			case         256:  pixel(dot - 2, scanline); bgH = mem[internal_load_addr]; v_scroll(); break;  // Vertical bump.
+			case         257:  pixel(dot - 2, scanline); reload_shift(); h_update(); break;  // Update horizontal position.
+			case 280 ... 304:  if (scanline == 261)            v_update(); break;  // Update vertical position.
+			case             1:  internal_load_addr = get_nt_addr(); if(scanline == 261) PPUSTATUS.V = 0; break;
+			case 321: case 339:  internal_load_addr = get_nt_addr(); break;
+			case           338:  nt = mem[internal_load_addr]; break;
+			case           340:  nt = mem[internal_load_addr]; if(scanline == 261 && rendering() && odd_frame) ++cycles; break;
+		}
+	}
+	else if(scanline == 240 && dot == 0) { // 形成完整的一帧图像
+		// 绘制一帧
+		SDL_UpdateTexture(texture, NULL, video_buffer, sizeof(uint32_t) * screen_width);
+		SDL_RenderCopy(renderer, texture, NULL, NULL); SDL_RenderPresent(renderer);
+		SDL_PollEvent(&event); // 捕捉事件（按键）
+		odd_frame = !odd_frame; ++frames_count;
+	} else if(scanline == 241 && dot == 1) { // 发出VBlank信号
+		PPUSTATUS.V = 1; if(PPUCTRL.V) cpu->nmi = true;
+	}
+	if(++cycles >= (frame_width * frame_height)) {
+		cycles %= (frame_width * frame_height); odd_frame = !odd_frame;
+	}
+}
+\end{cppcode}
+而在渲染部分，都调用了pixel()函数，用于计算当前行、列 的像素值：
+\begin{cppcode}
+	uint8_t draw_palette = 0, spr_palette = 0; // 调色板指针
+	bool spr_priority = 0;
+	if(y < 240 && x >= 0 && x < 256) {
+		// 背景
+		if (PPUMASK.b && !(!PPUMASK.m && x < 8)) {
+			draw_palette = GetBit(bgShiftH, 15 - fineX) << 1 |
+			               GetBit(bgShiftL, 15 - fineX);
+			if (draw_palette)
+				draw_palette |= (GetBit(atShiftH, 7 - fineX) << 1 |
+				                 GetBit(atShiftL, 7 - fineX)) << 2;
+		}
+		// 精灵
+		if (PPUMASK.s && !(!PPUMASK.M && x < 8))
+			for(int i = 7; i >= 0; --i) {
+				if(sprTile[i].id == 64) continue; // 空
+				unsigned sprX = x - sprTile[i].X;
+				if(sprX >= 8) continue;
+				if(sprTile[i].Attr & 0x40) sprX ^= 7; // 水平翻转
+				uint8_t p = GetBit(sprTile[i].tileH, 7 - sprX) << 1 |
+				            GetBit(sprTile[i].tileL, 7 - sprX);
+				if(p == 0) continue;
+				// sprite 0的非零像素覆盖背景的非零像素
+				if(sprTile[i].id == 0 && draw_palette && x != 255) PPUSTATUS.S = 1;
+				p |= (sprTile[i].Attr & 0x03) << 2;
+				spr_palette = p + 0x10;                // sprite的palette在0x3f10
+				spr_priority = sprTile[i].Attr & 0x20; // 精灵在背景前面还是后面
+			}
+		if(spr_palette && (draw_palette == 0 || spr_priority == 0))
+			draw_palette = spr_palette;
+		video_buffer[screen_width * y + x] = palette[mem[0x3F00 + (rendering() ? draw_palette : 0)]]; // 存储像素点
+	}
+	// 更新内部移位寄存器的值
+	bgShiftL <<= 1; bgShiftH <<= 1;
+	atShiftL = (atShiftL << 1) | atL;
+	atShiftH = (atShiftH << 1) | atH;
+}
+\end{cppcode}
+\subsection{卡带}
+卡带的实现就比较简单了，其类定义如下：
+\begin{cppcode}
+class Cartridge {
+public:
+	bool LoadRomFile(CPU &cpu, PPU &ppu, const std::string & filename);
+private:
+	struct {                    // ROM文件的文件头定义
+		uint8_t INes[4];        // 应为0x4e 0x45 0x53 0x1a
+		uint8_t PRGRomBankCnt;  // PRG ROM的大小（块数），单位16K一块
+		uint8_t CHRRomBankCnt;  // CHR ROM的大小（块数），单位8K一块，0表示使用CHR RAM
+		uint8_t ROMControl[2];  // ROM控制位
+		uint8_t PRGRamBankCnt;  // PRG RAM的大小（块数）,单位8K一块，若为0则代表1块，8k
+		uint8_t Reserved[7];    // 保留位，全零
+	} header;
+	std::string filename;       // ROM文件名
+};
+\end{cppcode}
+LoadRomFile方法将ROM文件加载进内存，主要代码如下：
+\begin{cppcode}
+bool Cartridge::LoadRomFile(CPU &cpu, PPU &ppu, const std::string &filename) {
+	this->filename = filename;
+	FILE *fp = fopen(filename.c_str(), "rb"); // 打开文件
+	if(fp == NULL) {
+		printf("open file "); perror(filename.c_str());
+		return false;
+	}
+	fread((void*)&header, sizeof(header), 1, fp); // 读取头
+	__CPUMem__::iterator cpuRamIt = cpu.mem.begin(); // 内存迭代器
+	__PPUMem__::iterator ppuRamIt = ppu.mem.begin();
+	if(! GetBit(header.ROMControl[0], 3))  // 名称表的水平、垂直映射
+		GetBit(header.ROMControl[0], 0) ?  ppu.mem.setVerticalMirroring() : ppu.mem.setHorizontalMirroring();
+	// Mapper
+	switch (JointBits(GetUpperBits(header.ROMControl[1]),
+	                  GetUpperBits(header.ROMControl[0]))) {
+		case 0: case 64: { // Mapper 0
+			uint8_t PRGRomData[0x4000];
+			fread((void*)PRGRomData, sizeof(PRGRomData), 1, fp);
+			std::copy(PRGRomData, PRGRomData + sizeof(PRGRomData), cpuRamIt + 0x8000); // 复制ROM数据到CPU内存中
+			if(header.PRGRomBankCnt > 1)
+			    fread((void*)PRGRomData, sizeof(PRGRomData), 1, fp);
+			std::copy(PRGRomData, PRGRomData + sizeof(PRGRomData), cpuRamIt + 0xc000);
+			uint8_t CHRRomData[0x2000];
+			fread((void*)CHRRomData, sizeof(CHRRomData), 1, fp); // 复制图像数据到CPU内存中
+			std::copy(CHRRomData, CHRRomData + sizeof(CHRRomData), ppuRamIt + 0x0000);
+			break;
+		}
+	}
+	fclose(fp);
+	return true;
+}
+\end{cppcode}
 
+\subsection{标准控制器}
+标准控制器采用移位寄存器实现，类定义如下：
+\begin{cppcode}
+class Joypad {
+private:
+	uint8_t const *keypad;
+	// R, L, D, U, St, Sel, B, A
+	uint8_t joypad_bits[2];                // 手柄1、手柄2移位寄存器
+	bool strobe; // 控制是否读入键位
+public:
+	// n为0或者1，表明操作第几个手柄
+	uint8_t read_joypad_status(int n = 0);
+	void write_joypad_status(bool v);
+	uint8_t get_joypad_status(int n = 0);  // 读取键盘上的按键状态
+};
+\end{cppcode}
+
+读、写手柄状态寄存器分别为read\_joypad\_status()和write\_joypad\_status()，主要代码如下：
+
+\begin{cppcode}
+uint8_t Joypad::read_joypad_status(int n) {
+	// 若S为高电平，则读取A键，由于硬件问题高第二位为1
+	if(strobe) return 0x40 | (get_joypad_status(n) & 1);
+	// 每次读取一位并右移一位
+	uint8_t key_status = 0x40 | (joypad_bits[n] & 1);
+	joypad_bits[n] = 0x80 | (joypad_bits[n] >> 1);
+	return key_status;
+}
+void Joypad::write_joypad_status(bool v) {
+	if(strobe && !v) // 下降沿重载
+		for(int i = 0; i < 2; ++i) joypad_bits[i] = get_joypad_status(i);
+	strobe = v;
+}
+\end{cppcode}
+
+\section{单元测试}
+在开发过程中，需要对某些模块例如CPU进行单元测试来保证程序正确性，具体做法是编写测试用的汇编指令，执行完后检查各个寄存器的值是否符合预期，下面是截取某一段单元测试片段：
+\begin{cppcode}
+TEST(CPUTest, opTest) {
+	CPU cpu; PPU ppu;
+	cpu.connectTo(ppu); ppu.connectTo(cpu);
+	uint8_t &X = cpu.getX(), &Y = cpu.getY(),
+			&SP = cpu.getSP(), &A = cpu.getA();
+	uint16_t &PC = cpu.getPC();
+	ProcessorStatus &P = cpu.getP();
+	EXPECT_TRUE(cart.LoadRomFile(cpu, ppu, "./test.nes"));
+	EXPECT_TRUE(cart.PrintHeader());
+	cpu.Reset();
+	// 测试是否正常读取指令
+	EXPECT_EQ(cpu.Read8(PC), 0xf8); // SED
+	// 开始执行
+	EXPECT_EQ(cpu.Execute(), 2);    // sed
+	EXPECT_TRUE(P.Decimal);
+	EXPECT_EQ(cpu.Execute(), 2);    // cld
+	EXPECT_FALSE(P.Decimal);
+	A = 0xff;
+	EXPECT_EQ(cpu.Execute(), 2);    // asl
+	// 测试各个寄存器的值是否符合预期
+	EXPECT_EQ(A, 0xfe); EXPECT_FALSE(P.Zero); EXPECT_TRUE(P.Negative); EXPECT_TRUE(P.Carry);
+	cpu.Write(0x0066, 0);
+	EXPECT_EQ(cpu.Execute(), 5);    // asl $66
+	EXPECT_EQ(cpu.Read8(0x66), 0x0); EXPECT_TRUE(P.Zero); EXPECT_FALSE(P.Negative); EXPECT_FALSE(P.Carry);
+	X = 1;
+	cpu.Write(0x0000, 0x80);
+	EXPECT_EQ(cpu.Execute(), 6);    // asl $ff,X
+	EXPECT_EQ(cpu.Read8(0x66), 0x0); EXPECT_TRUE(P.Zero); EXPECT_FALSE(P.Negative); EXPECT_TRUE(P.Carry);
+	... // 省略余下代码
+}
+\end{cppcode}
+
+\section{总结}
+通过实现游戏模拟器来深入理解计算机原理，是一个不错的选择。模拟器的实现，使得我在今后程序开发的道路上越走越深。
+
+本课题完成的主要工作如下：
+\begin{enumerate}
+\item NES使用的是2A03处理器，基于6502的小端CPU。 一共有56条指令集和13种寻址方式总共151个有效操作码，6个寄存器，时钟频率1.77MHz。需要正确无误实现每一条操作码、不同寻址模式、内存布局/IO映像、DMA、栈帧、寄存器、中断特性、设计上的BUG等等。
+\item NES使用2C02图形处理器PPU，时钟频率是CPU的3倍，显存16KB，帧分辨率341x262，可视部分分辨率256x240，每一个时钟周期渲染一个像素点，每秒传输60帧。需要精确同步CPU与PPU的时钟频率，计算图形数据在内存中的定位，并高效的渲染每一帧，模拟读写寄存器产生的副作用。
+\item 采用直接翻译游戏ROM指令的方式，读取PC指针的操作码进行译码，运行，写回寄存器/内存，更新PC。
+\item 跨平台开发，考虑代码的兼容性、确保高性能。
+\item 进行单元测试保证正确性。
+\end{enumerate}
+
+在这几个月的毕业设计过程中，本人查阅了许多资料，接触到许多新东西，对自身技能也提高了许多。自己独立完成了整个系统的设计与实现，提高了自己分析问题和解决问题的能力，对于如何调试程序也有了深刻的理解。
+
+由于时间问题和自身经验不足，本系统有以下几个部分需要完善：
+\begin{enumerate}
+\item 实现常用的Mapper
+\item 实现APU音频模块
+\end{enumerate}
 
 }
 
@@ -801,6 +1067,8 @@ public:
 
 % 致谢
 \begin{acknowledge}
+	在论文完善之际，感谢所有帮助过我的人！
+
 	感谢我的母校，由于高考志愿填报问题导致我不能如愿以偿地进入本校计算机科学与技术专业进行学习，在食品与科学工程的两年里，依旧不忘初心地自学我所爱。凭借特长在各位老师、领导的支持与厚爱下转入信息工程系，让我得以深入学习，最后从事一份自己所感兴趣的工作。
 
 	感谢我的指导老师安鑫老师，安鑫老师严谨的治学态度和精益求精的工作作风，深深地感染着我，使我终生受用。从课题的开题到论文的最终完成，安鑫老师都始终给予我细心的指导，在这期间向我提出了许多宝贵意见和建议。当我遇到困难时，都是安鑫老师给我鼓励与指引，使我能够克服重重困难。在此谨向安鑫老师致以诚挚的谢意。
