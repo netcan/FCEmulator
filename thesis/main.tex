@@ -17,6 +17,12 @@
 \DeclareCaptionFormat{smallformat}{\songti \small #1#2#3} % 宋体，五号
 
 \input{macro.tex}
+\hypersetup{
+    pdftitle={基于6502 CPU的NES模拟器设计与实现},    % title
+    pdfauthor={罗能},     % author
+    pdfcreator={罗能},   % creator of the document
+    pdfkeywords={模拟器；6502；计算机组成原理；NES}
+}
 
 \captionsetup{
 	labelsep=quad, % caption去掉分隔符:
@@ -79,6 +85,8 @@
 \setlength{\cfttabnumwidth}{3.5em}
 \clearpage
 \tableofcontents
+\addtocontents{toc}{\protect\thispagestyle{empty}}
+\pagenumbering{gobble}
 
 \clearpage
 \listoffigures
@@ -86,7 +94,7 @@
 \clearpage
 \listoftables
 
-\setcounter{page}{0}
+\pagenumbering{arabic}
 }
 
 % 设置页眉
@@ -97,6 +105,7 @@
 
 % 正文
 {
+\setcounter{page}{1}
 % 重写section指令以便设置section段前1行间距，分页
 \pretocmd{\section}{\clearpage \vspace*{-2.0em}}{}{}
 
@@ -1079,7 +1088,7 @@ TEST(CPUTest, opTest) {
 \end{acknowledge}
 
 % 附录，必要时
-\begin{appendix}
-\end{appendix}
+%\begin{appendix}
+%\end{appendix}
 
 \end{document}
