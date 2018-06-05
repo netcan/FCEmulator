@@ -61,11 +61,11 @@
 \include{tex/statement}
 
 \begin{abstract}
-	NES\footnote{全称为Nintendo Entertainment System}(任天堂娱乐系统)在20世纪80年代是世界上使用最广泛的电子游戏系统，将许多游戏带入了家庭，并为当今电子游戏产业铺平了道路。
+	NES\footnote{全称为Nintendo Entertainment System}(任天堂娱乐系统)在20世纪80年代是世界上使用最广泛的电子游戏终端，其将许多游戏带入了家庭，并为当今电子游戏产业铺平了道路。
 
 	随着科技的发展，许多NES游戏已经无法在当今系统上游玩，然而归功于模拟器的存在，使得这些经典能够延续下去。
 
-	本课题设计并用C++实现一个跨平台\footnote{在Win/Linux/Mac三大平台运行}的NES模拟器，以达到在现代操作系统中能够模拟并运行上个年代的NES游戏。
+	NES是一个由8位6502 CPU组成的微型计算机，能够有条不絮地运行游戏程序。本课题设计并用C++实现一个跨平台\footnote{在Win/Linux/Mac三大平台运行}的NES模拟系统，提供一个具体的软、硬件环境，以达到在现代操作系统中能够模拟并运行上个年代的NES游戏的目的。
 
 \end{abstract}
 
@@ -74,8 +74,7 @@
 
 	With the development of science and technology, many NES games can no longer play on modern operating systems, but thanks to the presence of emulators, these classics can continue.
 
-	This project designs and implements a cross-platform NES emulator in C++ to achieve the ability to emulate and run NES games of the last decade in modern operating systems.
-
+	The NES is a minicomputer that consists of an 8-bit 6502 CPU that can run game programs. This paper design and implement a cross-platform NES emulator in C++, providing a specific hardware and software environment, in order to be able to achieve the purpose of emulation and runing NES games of the last decade in modern operating systems.
 \end{abstractEn}
 
 % 目录
@@ -119,7 +118,10 @@ NES是一个8位家用电子游戏终端系统，由任天堂公司开发与制�
 
 当时在游戏机市场最畅销的时候，NES在1983年的电子游戏行业崩溃\footnote{由于市场饱和，同时又充斥着大量粗制滥造的游戏}之后振兴了美国电子游戏行业。任天堂公司提出了严格的第三方开发者授权的商业模式来确保游戏质量，所有游戏必须通过任天堂的批准，并且第三方厂商每年只能开发一定数量的游戏，后来的SNES\footnote{Super Nintendo Entertainment System, 由任天堂于1990年发行的16位电子游戏机}也采用了这种模式。正是因为这款游戏机的先进技术和严格的授权开发商业模式，使其成为电视游戏机的开山鼻祖。
 
+
 在2009年时，NES被IGN\footnote{最大最权威的电子游戏评测网站}评为游戏历史上最伟大的电子游戏机\footnote{\url{http://www.ign.com/lists/top-25-consoles/1}}。
+
+模拟器软件能够在一台电子设备或一个计算机程序中运行另外一台设备或程序，对于游戏模拟器而言，需要严格精确地模拟硬件，其中模拟CPU的重点是“精准”，比如硬件BUG一致、寻址正确无误、指令执行周期一致、中断优先级得模拟出来。除此之外还有总线、内存、外设的模拟。对于总线、内存模拟，需要考虑读写是否有效、大块数据正确传输等等。模拟器的关键之处就在于用代码实现了硬件的功能。
 
 为了能够对大学所学知识加以应用，这个课题能够深入理解计算机是如何运行程序的，同时又能将经典游戏继续延续下去；为了能够跨平台流畅运行，还需要写出高兼容性、高性能代码；为了保证开发的效率，需要学习6502汇编，编写单元测试。
 
@@ -128,7 +130,7 @@ NES是一个8位家用电子游戏终端系统，由任天堂公司开发与制�
 
 目前有以下三种方法来实现模拟器：
 \begin{description}[align=left]
-	\item [直接翻译] 读取源程序PC指针上的指令，并翻译成目标机器指令，更新PC指针、内存。由于在执行过程中进行翻译，可能会导致性能问题。
+	\item [直接翻译] 读取源程序PC指针上的指令，并翻译成目标机器指令，更新PC指针、内存。由于在执行过程中进行翻译，可能会影响性能问题。
 	\item [静态编译] 将源程序一次性编译到能够在目标系统上运行的程序，然而静态编译无法判断运行时遇到的分支跳转语句。
 	\item [动态编译] 结合以上两种方式，算是一种折中方案。
 \end{description}
@@ -136,16 +138,32 @@ NES是一个8位家用电子游戏终端系统，由任天堂公司开发与制�
 最终本课题采取直接翻译的方法来实现模拟器，考虑性能问题，利用C++来实现，以达到最大性能；为了显示图形、处理键盘输入，利用SDL库绘图、响应；为保证模拟器能够正确工作、重构，利用Google Test框架来单元测试。为了方便跨平台编译，使用CMake自动化构建。
 
 \subsection{预期成果}
-由于写一个兼容目前所有游戏将超出本课题范围，这里最终成果是能够运行超级马里奥、吃豆人等经典游戏，如图\ref{fig:goal}所示，从技术角度上来讲也极具挑战性，因为它们或多或少依赖一些硬件上的特性，实现起来需要特别处理。
+由于写一个兼容目前所有游戏将超出本课题范围，这里最终成果是能够运行超级马里奥兄弟、吃豆人、F1赛车等经典游戏，如图\ref{fig:goal}所示，从技术角度上来讲也极具挑战性，因为它们或多或少依赖一些硬件上的特性，实现起来需要特别处理。
 \begin{figure}[h]
 	\centering
-		\begin{subfigure}[b]{0.48\textwidth}
+		\begin{subfigure}[b]{0.49\textwidth}
 			\includegraphics[width=\textwidth]{images/super_mario_bros.png}
 			\caption{超级马里奥兄弟}
 		\end{subfigure}
-		\begin{subfigure}[b]{0.48\textwidth}
+		\begin{subfigure}[b]{0.49\textwidth}
 			\includegraphics[width=\textwidth]{images/pac_man.png}
 			\caption{吃豆人}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.49\textwidth}
+			\includegraphics[width=\textwidth]{images/F1.png}
+			\caption{F1赛车}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.49\textwidth}
+			\includegraphics[width=\textwidth]{images/1942.png}
+			\caption{1942}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.49\textwidth}
+			\includegraphics[width=\textwidth]{images/Excitebike.png}
+			\caption{摩托}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.49\textwidth}
+			\includegraphics[width=\textwidth]{images/功夫.png}
+			\caption{功夫}
 		\end{subfigure}
 		\caption{本模拟器模拟的一些经典游戏}
 		\label{fig:goal}
@@ -1071,7 +1089,7 @@ TEST(CPUTest, opTest) {
 \nocite{*} % 添加所有文献
 %\bibliographystyle{gbt7714-2005} % 样式
 \bibliography{bib/ref.bib}    % 文献数据库
-\bibliographystyle{unsrt} % 样式
+\bibliographystyle{bib/gbt7714-2005.bst} % 样式
 }
 
 % 致谢
