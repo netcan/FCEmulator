@@ -9,8 +9,10 @@
 \usepackage{geometry, parskip, seqsplit, fancyhdr, etoolbox, tocloft}
 \usepackage{flafter, chngcntr, caption, multirow, graphicx, enumitem, subcaption}
 \usepackage{minted, tabularx}
+\usepackage[bottom]{footmisc}
 \usepackage[table,xcdraw]{xcolor}
 \usepackage{tikz}
+\usepackage[bottom]{footmisc} % 脚注放到页面最底部
 
 \counterwithin{figure}{section} % 图的编号按section编排
 \counterwithin{table}{section} % 表的编号按section编排
@@ -65,7 +67,7 @@
 
 	随着科技的发展，许多NES游戏已经无法在当今系统上游玩，然而归功于模拟器的存在，使得这些经典能够延续下去。
 
-	NES是一个由8位6502 CPU组成的微型计算机，能够有条不絮地运行游戏程序。本课题设计并用C++实现一个跨平台\footnote{在Win/Linux/Mac三大平台运行}的NES模拟系统，提供一个具体的软、硬件环境，以达到在现代操作系统中能够模拟并运行上个年代的NES游戏的目的。
+	NES是一个由8位6502 CPU组成的微型计算机，能够有条不絮地运行游戏程序。本课题设计并用C++实现一个跨平台\footnote{在Win/Linux/Mac三大平台运行}的NES模拟系统，提供一个具体的硬件环境，以达到在现代操作系统中能够模拟并运行上个年代的NES游戏的目的。
 
 \end{abstract}
 
@@ -74,7 +76,7 @@
 
 	With the development of science and technology, many NES games can no longer play on modern operating systems, but thanks to the presence of emulators, these classics can continue.
 
-	The NES is a minicomputer that consists of an 8-bit 6502 CPU that can run game programs. This paper design and implement a cross-platform NES emulator in C++, providing a specific hardware and software environment, in order to be able to achieve the purpose of emulation and runing NES games of the last decade in modern operating systems.
+	The NES is a minicomputer that consists of an 8-bit 6502 CPU that can run game programs. This paper design and implement a cross-platform NES emulator in C++, providing a specific hardware environment, in order to be able to achieve the purpose of emulation and runing NES games of the last decade in modern operating systems.
 \end{abstractEn}
 
 % 目录
@@ -121,7 +123,7 @@ NES是一个8位家用电子游戏终端系统，由任天堂公司开发与制�
 
 在2009年时，NES被IGN\footnote{最大最权威的电子游戏评测网站}评为游戏历史上最伟大的电子游戏机\footnote{\url{http://www.ign.com/lists/top-25-consoles/1}}。
 
-模拟器软件能够在一台电子设备或一个计算机程序中运行另外一台设备或程序，对于游戏模拟器而言，需要严格精确地模拟硬件，其中模拟CPU的重点是“精准”，比如硬件BUG一致、寻址正确无误、指令执行周期一致、中断优先级得模拟出来。除此之外还有总线、内存、外设的模拟。对于总线、内存模拟，需要考虑读写是否有效、大块数据正确传输等等。模拟器的关键之处就在于用代码实现了硬件的功能。
+模拟器软件能够在一台电子设备或一个计算机程序中运行另外一台设备或程序，对于游戏模拟器而言，需要严格精确地模拟硬件，其中模拟CPU的重点是“精准”，比如指令集一致、指令执行周期一致、硬件BUG一致、寻址正确无误、中断优先级得模拟出来。除此之外还有总线、内存、外设的模拟。对于总线、内存模拟，需要考虑读写是否有效、大块数据正确传输等等，对于外设图形处理器而言，需要精确的取出并计算像素信息等等。模拟器的关键之处就在于用代码实现了硬件的功能。
 
 为了能够对大学所学知识加以应用，这个课题能够深入理解计算机是如何运行程序的，同时又能将经典游戏继续延续下去；为了能够跨平台流畅运行，还需要写出高兼容性、高性能代码；为了保证开发的效率，需要学习6502汇编，编写单元测试。
 
@@ -129,47 +131,16 @@ NES是一个8位家用电子游戏终端系统，由任天堂公司开发与制�
 由于任天堂未公布相关硬件细节，许多NES模拟器开发者通过对硬件逆向工程获得了许多信息，将这些信息整合起来就能够了解内部工作原理，足以实现一个模拟器了。
 
 目前有以下三种方法来实现模拟器：
-\begin{description}[align=left]
-	\item [直接翻译] 读取源程序PC指针上的指令，并翻译成目标机器指令，更新PC指针、内存。由于在执行过程中进行翻译，可能会影响性能问题。
-	\item [静态编译] 将源程序一次性编译到能够在目标系统上运行的程序，然而静态编译无法判断运行时遇到的分支跳转语句。
-	\item [动态编译] 结合以上两种方式，算是一种折中方案。
-\end{description}
+\begin{itemize}
+	\item 直接翻译，读取源程序PC指针上的指令，并翻译成目标机器指令，更新PC指针、内存。由于在执行过程中进行翻译，可能会影响性能问题。
+	\item 静态编译，将源程序一次性编译到能够在目标系统上运行的程序，然而静态编译无法判断运行时遇到的分支跳转语句。
+	\item 动态编译，结合以上两种方式，算是一种折中方案。
+\end{itemize}
 
 最终本课题采取直接翻译的方法来实现模拟器，考虑性能问题，利用C++来实现，以达到最大性能；为了显示图形、处理键盘输入，利用SDL库绘图、响应；为保证模拟器能够正确工作、重构，利用Google Test框架来单元测试。为了方便跨平台编译，使用CMake自动化构建。
 
 \subsection{预期成果}
 由于写一个兼容目前所有游戏将超出本课题范围，这里最终成果是能够运行超级马里奥兄弟、吃豆人、F1赛车等经典游戏，如图\ref{fig:goal}所示，从技术角度上来讲也极具挑战性，因为它们或多或少依赖一些硬件上的特性，实现起来需要特别处理。
-\begin{figure}[h]
-	\centering
-		\begin{subfigure}[b]{0.49\textwidth}
-			\includegraphics[width=\textwidth]{images/super_mario_bros.png}
-			\caption{超级马里奥兄弟}
-		\end{subfigure}
-		\begin{subfigure}[b]{0.49\textwidth}
-			\includegraphics[width=\textwidth]{images/pac_man.png}
-			\caption{吃豆人}
-		\end{subfigure}
-		\begin{subfigure}[b]{0.49\textwidth}
-			\includegraphics[width=\textwidth]{images/F1.png}
-			\caption{F1赛车}
-		\end{subfigure}
-		\begin{subfigure}[b]{0.49\textwidth}
-			\includegraphics[width=\textwidth]{images/1942.png}
-			\caption{1942}
-		\end{subfigure}
-		\begin{subfigure}[b]{0.49\textwidth}
-			\includegraphics[width=\textwidth]{images/Excitebike.png}
-			\caption{摩托}
-		\end{subfigure}
-		\begin{subfigure}[b]{0.49\textwidth}
-			\includegraphics[width=\textwidth]{images/功夫.png}
-			\caption{功夫}
-		\end{subfigure}
-		\caption{本模拟器模拟的一些经典游戏}
-		\label{fig:goal}
-\end{figure}
-
-比较遗憾的是，本课题还未实现Mapper\footnote{能够对换卡带中的程序ROM到CPU内存中，用来运行大容量游戏}，声音模块，实现它们也将是一件有意思的事情。
 
 \section{任天堂娱乐系统}
 本章主要介绍一下NES的各个硬件模块的相关细节。
@@ -190,16 +161,16 @@ NES使用内存I/O映射技术，使得处理器写入指定内存位置，即�
 
 \subsubsection{系统总线}
 如图\ref{fig:system_bus}所示，NES采用三总线结构：
-\begin{description}[align=left]
-	\item [数据总线] 8位双向数据总线，在CPU与RAM、I/O设备之间双向传输（读、写），在程序卡带ROM之间单向传输（只读）。
-	\item [控制总线] 8位控制线，用于控制目标状态是读还是写。
-	\item [地址总线] 16位地址总线，用于指定目标的位置。
-\end{description}
+\begin{itemize}
+	\item 数据总线，8位双向数据总线，在CPU与RAM、I/O设备之间双向传输（读、写），在程序卡带ROM之间单向传输（只读）。
+	\item 控制总线，8位控制线，用于控制目标状态是读还是写。
+	\item 地址总线，16位地址总线，用于指定目标的位置。
+\end{itemize}
 
 同时，内存被划分为三个部分：
 \begin{itemize}
 	\item 卡带中的ROM区，只读存储器，由MMC组件\footnote{Memory Mapper Chip，也称为Mapper}来访问，扮演内存块兑换的角色
-	\item CPU的RAM区
+	\item CPU的RAM区，存放程序数据
 	\item I/O寄存器映射区，用于CPU与外部组件PPU\footnote{图形处理器}、控制器进行通信
 \end{itemize}
 
@@ -314,34 +285,34 @@ IRQ   & 0xFFFE & 可屏蔽中断，受到中断屏蔽标志位(I)的影响，也
 
 \subsubsection{寻址模式}
 6502有13种寻址模式，介绍如下。
-\begin{description}
-\item [隐式寻址] 操作数隐藏在操作码中无需给出，也就是没有操作数\\
+\begin{itemize}
+\item 隐式寻址，操作数隐藏在操作码中无需给出，也就是没有操作数\\
  \mintinline [breaklines]{asm}{CLC ;清除进位标志位}
-\item [累加器寻址] 只有累加器这一个操作数\\
+\item 累加器寻址，只有累加器这一个操作数\\
  \mintinline [breaklines]{asm}{LSR A ; 对累加器A进行逻辑右移}
-\item [立即数寻址] 操作数为第二个字节指明的常量，在6502汇编中用\#号来表明\\
+\item 立即数寻址，操作数为第二个字节指明的常量，在6502汇编中用\#号来表明\\
  \mintinline [breaklines]{asm}{LDA #10; 将10存放到累加器A中}
-\item [零页寻址] 第二字节为操作数的地址，由于只用一个字节来表示地址，故操作数地址范围在0x00-0xff，即零页，在6502汇编中用\$来表明16进制地址\\
+\item 零页寻址，第二字节为操作数的地址，由于只用一个字节来表示地址，故操作数地址范围在0x00-0xff，即零页，在6502汇编中用\$来表明16进制地址\\
  \mintinline [breaklines]{asm}{LDA $00; 将内存地址0x00上的存储单元的值作为操作数存放到累加器A中}
-\item [零页X变址寻址] 第二个字节作为基址，加上X寄存器的值作为最终操作数地址\footnote{需要注意的是地址高位不进位，地址始终限制在0x00-0xff范围内}\\
+\item 零页X变址寻址，第二个字节作为基址，加上X寄存器的值作为最终操作数地址\footnote{需要注意的是地址高位不进位，地址始终限制在0x00-0xff范围内}\\
  \mintinline [breaklines]{asm}{STY $10,X; 将内存地址(0x10 + X)上的存储单元的值存放到寄存器Y中}
-\item [零页Y变址寻址] 和零页X变址一样，只不过是换成了Y寄存器\\
+\item 零页Y变址寻址，和零页X变址一样，只不过是换成了Y寄存器\\
  \mintinline [breaklines]{asm}{LDX $10,Y; 将内存地址(0x10+Y)上的存储单元的值存放到寄存器X中}
-\item [相对寻址] 分支跳转指令专用，第二个字节操作数（-128到127）加到PC指针上作为跳转目标的地址\\
+\item 相对寻址，分支跳转指令专用，第二个字节操作数（-128到127）加到PC指针上作为跳转目标的地址\\
  \mintinline [breaklines]{asm}{BEQ $2d; 若结果为0则跳转到PC+0x2d的地址}
-\item [绝对寻址] 操作数地址为第二、三字节组成的16位地址\\
+\item 绝对寻址，操作数地址为第二、三字节组成的16位地址\\
  \mintinline [breaklines]{asm}{LDA $1234; 将内存地址0x1234上的存储单元的值存放到累加器A}
-\item [绝对X变址寻址] 第二、三字节组成的16位地址加上X寄存器的值作为操作数地址\\
+\item 绝对X变址寻址，第二、三字节组成的16位地址加上X寄存器的值作为操作数地址\\
  \mintinline [breaklines]{asm}{STA $3000,X; 将内存地址(0x3000+X)上的存储单元的值存放到累加器A}
-\item [绝对Y变址寻址] 和绝对X变址一样，只不过是换成了Y寄存器\\
+\item 绝对Y变址寻址，和绝对X变址一样，只不过是换成了Y寄存器\\
  \mintinline [breaklines]{asm}{STA $3000,Y; 将内存地址(0x3000+Y)上的存储单元的值存放到累加器A}
-\item [间接寻址] JMP跳转指令专用，第二、三字节组成的16位地址内存单元上的值作为地址\\
+\item 间接寻址，JMP跳转指令专用，第二、三字节组成的16位地址内存单元上的值作为地址\\
  \mintinline [breaklines]{asm}{JMP $FFFC; 跳转到Reset中断向量}
-\item [零页变址间接寻址]  第二字节为基址，加上X寄存器的值组成的零页内存地址（间址）单元上的值作为操作数地址\\
+\item 零页变址间接寻址， 第二字节为基址，加上X寄存器的值组成的零页内存地址（间址）单元上的值作为操作数地址\\
  \mintinline [breaklines]{asm}{LDA ($40,X); (0x40+X)作为间址，作为操作数地址取操作数存放到累加器A}
-\item [间接寻址变址]  第二字节为间址，取16位操作数并加上Y作为操作数有效地址\\
+\item 间接寻址变址， 第二字节为间址，取16位操作数并加上Y作为操作数有效地址\\
  \mintinline [breaklines]{asm}{LDA ($40),Y; 取0x40, 0x41组成16位地址，加上Y作为操作数有效地址，取操作数存放到累加器A}
-\end{description}
+\end{itemize}
 
 
 \subsubsection{指令集}
@@ -580,484 +551,542 @@ PPU在渲染期间的每一个时钟周期计算名称表、属性表、OAM精�
 }
 
 \subsection{CPU}
+CPU不断工作，首先需要将程序数据加载进内存，紧接着复位，也就是根据中断向量表中的复位向量0xFFFC指定的复位程序入口地址，复位完毕后跳转到主程序入口地址，不断解析指令并运行。
+
 \subsubsection{内存类实现}
-程序ROM数据需要加载进内存，供CPU运行，那么可对CPU内存类定义：
-\begin{cppcode}
-class __CPUMem__ {
-private:
-	uint8_t           Ram[0x800]; // 0x0000-0x07ff
-	uint8_t    *PPURegister[0x8]; // 0x2000-0x2007
-	uint8_t    *IORegister[0x20]; // 0x4000-0x401f
-	uint8_t ExpansionRom[0x1fe0]; // 0x4020-0x5fff
-	uint8_t         SRam[0x2000]; // 0x6000-0x7fff
-	uint8_t  LowerPRGRom[0x4000]; // 0x8000-0xbfff
-	uint8_t  UpperPRGRom[0x4000]; // 0xc000-0xffff
+程序ROM数据需要加载进内存，供CPU运行使用，那么可对CPU内存类定义一些数组，将数据存放到数组中，通过对operator[]方法进行重载，这样可实现内存地址即数组索引。
 
-	inline const uint8_t &AT(uint16_t addr) const {
-			return  addr < 0x2000 ? Ram[addr & 0x7ff]:
-					addr < 0x4000 ? *PPURegister[addr & 0x7]:
-					addr < 0x4020 ? *IORegister[(addr - 0x4000)]:
-					addr < 0x6000 ? ExpansionRom[addr - 0x4020]:
-					addr < 0x8000 ? SRam[addr - 0x6000]:
-					addr < 0xc000 ? LowerPRGRom[addr - 0x8000]:
-									UpperPRGRom[addr - 0xc000];
-	}
-public:
-	uint8_t &operator[](uint16_t addr) { return AT(addr); }
+由于有些内存区域是映射区域，映射到其他模块的寄存器中，这部分采用指针数组来存放，初始化的时候将指针指向对应模块的数据单元中。而对这些区域进行读写会导致一些额外的动作，例如对0x4014地址写入数据，将会触发DMA动作，所以需要在读写前，对地址进行判断，从而进行相应的动作。
 
-	using iterator = MemIterator<__CPUMem__>; // 迭代器，实现见下文
-	iterator begin() { return iterator(this, 0); }
-	iterator end() { return iterator(this, 0x10000); }
-};
-\end{cppcode}
+%\begin{cppcode}
+%class __CPUMem__ {
+	%uint8_t           Ram[0x800]; // 0x0000-0x07ff
+	%uint8_t    *PPURegister[0x8]; // 0x2000-0x2007
+	%uint8_t    *IORegister[0x20]; // 0x4000-0x401f
+	%uint8_t ExpansionRom[0x1fe0]; // 0x4020-0x5fff
+	%uint8_t         SRam[0x2000]; // 0x6000-0x7fff
+	%uint8_t  LowerPRGRom[0x4000]; // 0x8000-0xbfff
+	%uint8_t  UpperPRGRom[0x4000]; // 0xc000-0xffff
+%};
+%\end{cppcode}
 
-为方便对内存进行操作，这里通过继承STL的迭代器类iterator实现MemIterator，可达到类似C++ STL容器中的迭代器，从而可以使用algorithm中诸如copy等方法。
-\begin{cppcode}
-template<class MEMType>
-class MemIterator: public std::iterator // 内部用32位来表示地址，是因为16位不好判断end()
-		<std::random_access_iterator_tag, uint8_t, ptrdiff_t, uint32_t, uint8_t &> {
-public:
-	MemIterator(): parent(NULL), addr(0) {}
-	MemIterator(MEMType *parent, pointer addr): parent(parent), addr(addr) {}
+为方便对内存进行操作，这里通过继承STL的迭代器类iterator实现MemIterator，并实现一些基本操作如operator++/operator--/operator*等方法，从而可以使用algorithm中诸如copy等方法，那么就很容易地将大块ROM程序复制到内存对象中了。
+%\begin{cppcode}
+%template<class MEMType>
+%class MemIterator: public std::iterator // 内部用32位来表示地址，是因为16位不好判断end()
+		%<std::random_access_iterator_tag, uint8_t, ptrdiff_t, uint32_t, uint8_t &> {
+%public:
+	%MemIterator(): parent(NULL), addr(0) {}
+	%MemIterator(MEMType *parent, pointer addr): parent(parent), addr(addr) {}
 
-	reference operator*() { return parent->operator[](addr); }
-	uint8_t * get_raw_pointer() { return &parent->operator[](addr); }
+	%reference operator*() { return parent->operator[](addr); }
+	%uint8_t * get_raw_pointer() { return &parent->operator[](addr); }
 
-	MemIterator& operator++() { ++addr; return *this; } // ++it
-	MemIterator& operator--() { --addr; return *this; } // --it
+	%MemIterator& operator++() { ++addr; return *this; } // ++it
+	%MemIterator& operator--() { --addr; return *this; } // --it
 
-	MemIterator& operator+=(const uint16_t value) { this->addr += value; return *this; }
-	friend MemIterator operator+(MemIterator lhs, const uint16_t& rhs) { lhs += rhs; return lhs; }
+	%MemIterator& operator+=(const uint16_t value) { this->addr += value; return *this; }
+	%friend MemIterator operator+(MemIterator lhs, const uint16_t& rhs) { lhs += rhs; return lhs; }
 
-	friend bool operator==(const MemIterator &lhs, const MemIterator &rhs) { return lhs.addr == rhs.addr; }
-	friend bool operator< (const MemIterator &lhs, const MemIterator &rhs) { return lhs.addr < rhs.addr; }
+	%friend bool operator==(const MemIterator &lhs, const MemIterator &rhs) { return lhs.addr == rhs.addr; }
+	%friend bool operator< (const MemIterator &lhs, const MemIterator &rhs) { return lhs.addr < rhs.addr; }
 
-	friend difference_type operator-(const MemIterator &lhs, const MemIterator &rhs) { return lhs.addr - rhs.addr; }
+	%friend difference_type operator-(const MemIterator &lhs, const MemIterator &rhs) { return lhs.addr - rhs.addr; }
 
-	uint8_t &operator[](uint16_t value) { return parent->operator[](addr + value); }
-private:
-	pointer addr;
-	MEMType *parent;
-};
-\end{cppcode}
+	%uint8_t &operator[](uint16_t value) { return parent->operator[](addr + value); }
+%private:
+	%pointer addr;
+	%MEMType *parent;
+%};
+%\end{cppcode}
 
-在卡带将程序数据加载进内存0x8000位置时，可如下调用：
-\begin{cppcode}
-__CPUMem__::iterator cpuRamIt = cpu.mem.begin();
-std::copy(PRGRomData, PRGRomData + sizeof(PRGRomData), cpuRamIt + 0x8000);
-\end{cppcode}
+%在卡带将程序数据加载进内存0x8000位置时，可如下调用：
+%\begin{cppcode}
+%__CPUMem__::iterator cpuRamIt = cpu.mem.begin();
+%std::copy(PRGRomData, PRGRomData + sizeof(PRGRomData), cpuRamIt + 0x8000);
+%\end{cppcode}
 
 \subsubsection{指令类定义}
-CPU主要任务就是解析操作码，并执行相应的动作，可以对指令类定义如下：
-\begin{cppcode}
-struct Operation {                              // 指令
-	uint8_t code;                               // 8位操作码
-	CPU::OpAddressingMode addressing_mode;      // 寻址模式
-	uint8_t bytes, cycles;                      // 操作码的长度、周期数
-	uint8_t (*exe)(OpExeFuncArgs);              // 令的具体动作，返回执行的cycles数目
-};
-\end{cppcode}
+CPU主要任务就是识别操作码，并执行相应的动作。那么需要定义一个指令类Operation，指令对象存放一条指令所需要的信息，例如指令的操作码、寻址模式、长度、时钟周期数、对应动作的函数，将256条指令\footnote{这里包含了非官方指令集}存入到指令对象表中，索引是操作码，那么通过操作码就很容易找到对应的指令，从而执行指令相应的动作，返回相应的时钟周期数，供后续使用。
 
-从定义中可以看到，Operation类详细地记录了一条指令所需要的信息，需要一个指令表，存放这些指令数据，定义如下：
-\begin{cppcode}
-	static const Operation op_entity[] = {
-			{ 0x69, OpAddressingMode::    Immediate, 2, 2, CPU::OP_ADC },
-			{ 0x65, OpAddressingMode::     ZeroPage, 2, 3, CPU::OP_ADC },
-			{ 0x75, OpAddressingMode::    ZeroPageX, 2, 4, CPU::OP_ADC },
-			{ 0x6D, OpAddressingMode::     Absolute, 3, 4, CPU::OP_ADC },
-			{ 0x7D, OpAddressingMode::    AbsoluteX, 3, 4, CPU::OP_ADC },
-			{ 0x79, OpAddressingMode::    AbsoluteY, 3, 4, CPU::OP_ADC },
-			{ 0x61, OpAddressingMode::IndexIndirect, 2, 6, CPU::OP_ADC },
-			{ 0x71, OpAddressingMode::IndirectIndex, 2, 5, CPU::OP_ADC },
-			{ 0x29, OpAddressingMode::    Immediate, 2, 2, CPU::OP_AND },
-			{ 0x25, OpAddressingMode::     ZeroPage, 2, 3, CPU::OP_AND },
-			{ 0x35, OpAddressingMode::    ZeroPageX, 2, 4, CPU::OP_AND },
-			{ 0x2D, OpAddressingMode::     Absolute, 3, 4, CPU::OP_AND },
-			{ 0x3D, OpAddressingMode::    AbsoluteX, 3, 4, CPU::OP_AND },
-			{ 0x39, OpAddressingMode::    AbsoluteY, 3, 4, CPU::OP_AND },
-			{ 0x21, OpAddressingMode::IndexIndirect, 2, 6, CPU::OP_AND },
-			{ 0x31, OpAddressingMode::IndirectIndex, 2, 5, CPU::OP_AND },
-			... // 省略剩下的指令定义
-	}
-	static const Operation *optable[0xff + 1];
-	for(const auto & op: op_entity) optable[op.code] = &op;
-\end{cppcode}
+%\begin{cppcode}
+%struct Operation {                              // 指令
+	%uint8_t code;                               // 8位操作码
+	%CPU::OpAddressingMode addressing_mode;      // 寻址模式
+	%uint8_t bytes, cycles;                      // 操作码的长度、周期数
+	%uint8_t (*exe)(OpExeFuncArgs);              // 令的具体动作，返回执行的cycles数目
+%};
+%\end{cppcode}
 
-将256条指令\footnote{这里包含了非官方指令集}存入到optable表中，当CPU取出的操作码为0x69，就通过optable[0x69]找到正确的Operation对象。
+%从定义中可以看到，Operation类详细地记录了一条指令所需要的信息，需要一个指令表，存放这些指令数据，定义如下：
+%\begin{cppcode}
+	%static const Operation op_entity[] = {
+			%{ 0x69, OpAddressingMode::    Immediate, 2, 2, CPU::OP_ADC },
+			%{ 0x65, OpAddressingMode::     ZeroPage, 2, 3, CPU::OP_ADC },
+			%{ 0x75, OpAddressingMode::    ZeroPageX, 2, 4, CPU::OP_ADC },
+			%{ 0x6D, OpAddressingMode::     Absolute, 3, 4, CPU::OP_ADC },
+			%{ 0x7D, OpAddressingMode::    AbsoluteX, 3, 4, CPU::OP_ADC },
+			%{ 0x79, OpAddressingMode::    AbsoluteY, 3, 4, CPU::OP_ADC },
+			%{ 0x61, OpAddressingMode::IndexIndirect, 2, 6, CPU::OP_ADC },
+			%{ 0x71, OpAddressingMode::IndirectIndex, 2, 5, CPU::OP_ADC },
+			%{ 0x29, OpAddressingMode::    Immediate, 2, 2, CPU::OP_AND },
+			%{ 0x25, OpAddressingMode::     ZeroPage, 2, 3, CPU::OP_AND },
+			%{ 0x35, OpAddressingMode::    ZeroPageX, 2, 4, CPU::OP_AND },
+			%{ 0x2D, OpAddressingMode::     Absolute, 3, 4, CPU::OP_AND },
+			%{ 0x3D, OpAddressingMode::    AbsoluteX, 3, 4, CPU::OP_AND },
+			%{ 0x39, OpAddressingMode::    AbsoluteY, 3, 4, CPU::OP_AND },
+			%{ 0x21, OpAddressingMode::IndexIndirect, 2, 6, CPU::OP_AND },
+			%{ 0x31, OpAddressingMode::IndirectIndex, 2, 5, CPU::OP_AND },
+			%... // 省略剩下的指令定义
+	%}
+	%static const Operation *optable[0xff + 1];
+	%for(const auto & op: op_entity) optable[op.code] = &op;
+%\end{cppcode}
 
-有了指令表，还需要实现对应的exe函数，例如实现ADC，AND指令：
-\begin{cppcode}
-OpExeFuncDefine(OP_ADC) {
-	/**将内存中的数据和累加器A与状态寄存器P的进位标志位相加，结果存到累加器A中，并更新状态寄存器的Z, C, N位。**/
-	uint8_t operand = cpu->Read8(opd_addr); // 读取内存上的数据
-	uint16_t result = uint16_t(cpu->A) + uint16_t(operand) + cpu->P.Carry; // 计算结果
-	// 更新各个标志位
-	cpu->P.Overflow = GetBit(result, 0x8) ^
-	                  GetBit( (cpu->A & uint8_t(0x7f)) + (operand & uint8_t(0x7f)) + cpu->P.Carry, 0x7); // 补码运算
-	cpu->P.Carry = GetBit(result, 0x8); // 原码
-	cpu->P.Zero = (result & 0xff) == 0;
-	cpu->P.Negative = GetBit(uint8_t(result), 7);
-	cpu->A = uint8_t(result);
-	return self.cycles; // 返回执行的周期数
-}
-OpExeFuncDefine(OP_AND) {
-	/**将内存中的数据和累加器A进行与运算，并更新状态寄存器的Z，N位。**/
-	uint8_t operand = cpu->Read8(opd_addr); // 读取内存上的数据
-	cpu->A &= value;
-	cpu->P.Negative = GetBit(cpu->A, 7);
-	cpu->P.Zero = (cpu->A == 0);
-	return self.cycles; // 返回执行的周期数
-}
-\end{cppcode}
+%当CPU取出的操作码为0x69，就通过optable[0x69]找到正确的Operation对象。
+
+有了指令表，还需要一条条地实现对应的指令动作函数。例如实现ADC指令，首先知道这条指令的作用是寄存器(A)加上操作数(M)加上进位标志位(C)\cite{6502instruction}，更新的标志位有零标志位(Z)、进位标志位(C)、溢出标志位(V)、负数标志位(N)，实现的时候根据操作码对应的寻址模式在内存对象中取到操作数(M)，接着求和，若结果为零，将零标志位(Z)置位1；若结果为负数，也就是判断结果的最高有效位第7位是否为1，将负数标志位(N)置位1；若结果超出8位数据范围，那么进位标志位(C)置位1，而进位标志位一般当做无符号数相加；若结果溢出，将溢出标志位(V)置位1，而溢出标志位是将操作数当做有符号数运算，即补码运算，当运算结果非法置位，例如正+正=负的时候。
+
+比较麻烦的是如何判断是否溢出(V)，两个符号数相加得到非法结果，这里可以通过异或运算来实现，而溢出和进位这两个动作是最容易混淆了，前者是当做有符号数处理，后者当做无符号数来处理。\cite{overflow}
+
+%\begin{cppcode}
+%OpExeFuncDefine(OP_ADC) {
+	%/**将内存中的数据和累加器A与状态寄存器P的进位标志位相加，结果存到累加器A中，并更新状态寄存器的Z, C, N位。**/
+	%uint8_t operand = cpu->Read8(opd_addr); // 读取内存上的数据
+	%uint16_t result = uint16_t(cpu->A) + uint16_t(operand) + cpu->P.Carry; // 计算结果
+	%// 更新各个标志位
+	%cpu->P.Overflow = GetBit(result, 0x8) ^
+					  %GetBit( (cpu->A & uint8_t(0x7f)) + (operand & uint8_t(0x7f)) + cpu->P.Carry, 0x7); // 补码运算
+	%cpu->P.Carry = GetBit(result, 0x8); // 原码
+	%cpu->P.Zero = (result & 0xff) == 0;
+	%cpu->P.Negative = GetBit(uint8_t(result), 7);
+	%cpu->A = uint8_t(result);
+	%return self.cycles; // 返回执行的周期数
+%}
+%OpExeFuncDefine(OP_AND) {
+	%/**将内存中的数据和累加器A进行与运算，并更新状态寄存器的Z，N位。**/
+	%uint8_t operand = cpu->Read8(opd_addr); // 读取内存上的数据
+	%cpu->A &= value;
+	%cpu->P.Negative = GetBit(cpu->A, 7);
+	%cpu->P.Zero = (cpu->A == 0);
+	%return self.cycles; // 返回执行的周期数
+%}
+%\end{cppcode}
+\subsubsection{寻址模式实现}
+NES一共有13种寻址模式，同一条指令甚至有好几种寻址模式，根据操作码的不同来区分不同的寻址方式，从而取得操作数。
+
+例如实现绝对寻址，这种指令长度为3字节，第一字节为操作码，第二、三字节为操作数的绝对地址，一共16位。由于6502 CPU是小端CPU，第二、三字节分别作为操作数地址的低8位、高8位，获得地址后到内存对象中取出即可。
 
 \subsubsection{主类定义}
-接下来看看CPU类的结构：
-\begin{cppcode}
-class CPU {
-private:
-	uint16_t PC; // 程序计数器
-	uint8_t SP; // 栈指针，$0100-$01ff
-	uint8_t A, X, Y; // 累加器，X，Y寄存器
-	ProcessorStatus P; // 状态寄存器
-	__CPUMem__ mem;
-	uint32_t cycles; // 累计执行周期
-	PPU *ppu; // 控制PPU
-	Joypad *pad; // 外设
-	bool nmi, irq, dma; // 是否产生中断、DMA
-	enum class InterruptVector: uint16_t { // 中断向量表
-		NMI = 0xfffa,
-		Reset = 0xfffc,
-		IRQ = 0xfffe
-	};
-	...
-}
-\end{cppcode}
-
-CPU类包含了各个寄存器，内存，需要外接的PPU，标准控制器Pad，中断向量表，以及产生的中断类型，还有是否发生DMA。
+CPU类包含了各个寄存器，内存，需要外接的PPU，标准控制器Pad，中断向量表，以及产生的中断类型标记位，还有是否发生DMA。
+%接下来看看CPU类的结构：
+%\begin{cppcode}
+%class CPU {
+%private:
+	%uint16_t PC; // 程序计数器
+	%uint8_t SP; // 栈指针，$0100-$01ff
+	%uint8_t A, X, Y; // 累加器，X，Y寄存器
+	%ProcessorStatus P; // 状态寄存器
+	%__CPUMem__ mem;
+	%uint32_t cycles; // 累计执行周期
+	%PPU *ppu; // 控制PPU
+	%Joypad *pad; // 外设
+	%bool nmi, irq, dma; // 是否产生中断、DMA
+	%enum class InterruptVector: uint16_t { // 中断向量表
+		%NMI = 0xfffa,
+		%Reset = 0xfffc,
+		%IRQ = 0xfffe
+	%};
+	%...
+%}
+%\end{cppcode}
 
 \subsubsection{工作流程实现}
 接下来就是使得CPU工作的最关键实现了，也就是之前阐述的五个部分：取指、译码、执行、写回、更新PC。若期间发生中断或者DMA，则在指令执行结束后进行相应的处理。
-\begin{cppcode}
-uint16_t CPU::Execute() { // 执行一条指令，返回执行周期数
-	// 取指->译码->执行->更新PC->...
-	// 处理中断，DMA
-	if(nmi) { nmi = false; return Interrupt(static_cast<uint16_t>(InterruptVector::NMI)); }
-	if(dma) { dma = false; return OAMDMA(); }
-	// 取指
-	uint8_t op_code = mem[PC];
-	uint16_t updated_pc = PC + optable[op_code]->bytes;
-	// 译码，获取操作数
-	uint16_t opd_addr = 0xFFFF; // 默认值0xFFFF
-	bool crossed_page = false, has_operand = true;
-	FetchOperandAddr(optable[op_code]->addressing_mode, opd_addr, crossed_page, has_operand);
-	// 执行，写回
-	uint8_t cycle = ExeFunc(optable[op_code], this, opd_addr, updated_pc, crossed_page, has_operand);
-	// 更新PC
-	PC = updated_pc;
-	cycles += cycle;
-	return cycle;
-}
-\end{cppcode}
-\subsubsection{中断实现}
-当中断发生时，需要保存现场，即入栈PC指针、程序状态字P，接着关中断，最后将PC指向中断向量，从而进入中断程序。
-\begin{cppcode}
-uint8_t CPU::Interrupt(uint16_t vec_addr) {
-	auto PCH = uint8_t( ( (PC) >> 0x8) & 0xff),
-		 PCL = uint8_t((PC) & 0xff);
-	Push(PCH); // 入栈保存PC指针
-	Push(PCL);
-	Push(P); // 入栈保存程序状态字P
-	P.IrqDisabled = true; // 关中断
-	PC = Read16(vec_addr); // 获取中断向量
-	return 7; // 中断需要7个周期
-}
-\end{cppcode}
 
-中断程序结束后，会调用RTI结束中断，这个过程会恢复现场，即出栈程序状态字P、PC指针，开中断。
-\begin{cppcode}
-OpExeFuncDefine(OP_RTI) {
-	cpu->P = cpu->Pop(); // 出栈恢复程序状态字
-	uint8_t PCL = cpu->Pop(), PCH = cpu->Pop(); // 出栈恢复PC指针
-	updated_pc = (PCH << 0x8) | PCL;
-	return self.cycles;
-}
-\end{cppcode}
+实现这五个部分的方法，取指将PC指针作为内存对象的索引，从而获得操作码，紧接着从指令表中获取操作码相关信息，根据寻址模式来获取操作数，交给相应的指针函数进行运行，获取执行的时钟周期数，根据指令长度来更新PC指针并返回执行的时钟周期数。
+
+DMA依次将内存中连续的256字节数据复制到PPU模块的OAM数据单元中，返回512个时钟周期数。
+
+%\begin{cppcode}
+%uint16_t CPU::Execute() { // 执行一条指令，返回执行周期数
+	%// 取指->译码->执行->更新PC->...
+	%// 处理中断，DMA
+	%if(nmi) { nmi = false; return Interrupt(static_cast<uint16_t>(InterruptVector::NMI)); }
+	%if(dma) { dma = false; return OAMDMA(); }
+	%// 取指
+	%uint8_t op_code = mem[PC];
+	%uint16_t updated_pc = PC + optable[op_code]->bytes;
+	%// 译码，获取操作数
+	%uint16_t opd_addr = 0xFFFF; // 默认值0xFFFF
+	%bool crossed_page = false, has_operand = true;
+	%FetchOperandAddr(optable[op_code]->addressing_mode, opd_addr, crossed_page, has_operand);
+	%// 执行，写回
+	%uint8_t cycle = ExeFunc(optable[op_code], this, opd_addr, updated_pc, crossed_page, has_operand);
+	%// 更新PC
+	%PC = updated_pc;
+	%cycles += cycle;
+	%return cycle;
+%}
+%\end{cppcode}
+
+\subsubsection{中断实现}
+若产生中断，首先检查主类中的各个中断标记位，根据中断优先级来检查标记位，从而判断出是何种中断。
+
+当中断发生时，需要保存现场，即入栈PC指针、程序状态字P，接着通过设置程序状态字（P）的IrqDisabled位来关中断，最后将PC指向中断向量，从而进入中断程序。
+
+%\begin{cppcode}
+%uint8_t CPU::Interrupt(uint16_t vec_addr) {
+	%auto PCH = uint8_t( ( (PC) >> 0x8) & 0xff),
+		 %PCL = uint8_t((PC) & 0xff);
+	%Push(PCH); // 入栈保存PC指针
+	%Push(PCL);
+	%Push(P); // 入栈保存程序状态字P
+	%P.IrqDisabled = true; // 关中断
+	%PC = Read16(vec_addr); // 获取中断向量
+	%return 7; // 中断需要7个周期
+%}
+%\end{cppcode}
+
+中断程序结束后，程序会调用RTI指令结束中断，这个过程会恢复现场，即出栈程序状态字P、PC指针。不过不需要通过清除程序状态字（P）的IrqDisabled位来开中断，因为在设置标志位前就保护现场了。
+%\begin{cppcode}
+%OpExeFuncDefine(OP_RTI) {
+	%cpu->P = cpu->Pop(); // 出栈恢复程序状态字
+	%uint8_t PCL = cpu->Pop(), PCH = cpu->Pop(); // 出栈恢复PC指针
+	%updated_pc = (PCH << 0x8) | PCL;
+	%return self.cycles;
+%}
+%\end{cppcode}
 
 \subsubsection{子程序调用}
 6502 CPU可通过JSR指令对子程序调用，在子程序结束处调用RTS指令返回。整个过程和中断类似，除了开中断、保存、恢复程序状态字外，其他基本一样，这里不再重复。
 
 \subsection{PPU}
 \subsubsection{内存类定义}
-PPU的内存类和CPU的基本一致，核心代码如下：
-\begin{cppcode}
-class __PPUMem__ {
-private:
-	uint8_t VRAM[0x800];                // 2KB，存放2个名称表
-	uint8_t PatternTable[2][0x1000];    // 4KB * 2，存放图块表
-	uint8_t *NameTable[4][0x400];       // 1KB * 4，实际上只能用2块，指向VRAM，另外两块做镜像用
-	uint8_t Palette[0x20];              // 32B，调色板
-	inline const uint8_t &AT(uint16_t addr) const {
-		return    (addr < 0x2000 ? PatternTable[addr >> 0x0c][addr & 0xfff]:
-				  addr < 0x3000 ? *NameTable[(addr >> 0x0a) & 0x03][addr & 0x3ff]:
-				  addr < 0x3f00 ? AT(addr & 0x2fff) :
-				  addr < 0x4000 ? Palette[addr & 0x1f]:
-				  AT(addr & 0x3fff));
-	}
-public:
-	uint8_t &operator[](uint16_t addr) { return AT(addr); }
+PPU的内存类和CPU的基本一致。
+%\begin{cppcode}
+%class __PPUMem__ {
+%private:
+	%uint8_t VRAM[0x800];                // 2KB，存放2个名称表
+	%uint8_t PatternTable[2][0x1000];    // 4KB * 2，存放图块表
+	%uint8_t *NameTable[4][0x400];       // 1KB * 4，实际上只能用2块，指向VRAM，另外两块做镜像用
+	%uint8_t Palette[0x20];              // 32B，调色板
+	%inline const uint8_t &AT(uint16_t addr) const {
+		%return    (addr < 0x2000 ? PatternTable[addr >> 0x0c][addr & 0xfff]:
+				  %addr < 0x3000 ? *NameTable[(addr >> 0x0a) & 0x03][addr & 0x3ff]:
+				  %addr < 0x3f00 ? AT(addr & 0x2fff) :
+				  %addr < 0x4000 ? Palette[addr & 0x1f]:
+				  %AT(addr & 0x3fff));
+	%}
+%public:
+	%uint8_t &operator[](uint16_t addr) { return AT(addr); }
 
-	using iterator = MemIterator<__PPUMem__>; // 内存类的迭代器
-	iterator begin() { return iterator(this, 0); }
-	iterator end() { return iterator(this, 0x4000); }
-};
-\end{cppcode}
+	%using iterator = MemIterator<__PPUMem__>; // 内存类的迭代器
+	%iterator begin() { return iterator(this, 0); }
+	%iterator end() { return iterator(this, 0x4000); }
+%};
+%\end{cppcode}
 \subsubsection{主类定义}
-如下代码主要列出了PPU类的寄存器、内部寄存器，以及主要工作流程的方法。
-\begin{cppcode}
-class PPU {
-private:
-	uint32_t cycles; // PPU的时钟周期数，是cpu的三倍
-	__PPUMem__ mem;
-	PPURegister PPUCTRL, PPUMASK, PPUSTATUS, // PPU通用寄存器
-				OAMADDR, OAMDATA, PPUSCROLL,
-				PPUADDR, PPUDATA, OAMDMA;
-	uint8_t OAM[0x100]; // 256B的OAM精灵存储区
-	const static uint16_t frame_width = 341, frame_height = 262; // NTSC, 60fps
-	const static uint16_t screen_width = 256, screen_height = 240; // 每帧图像的大小
-	constexpr static double frame_duration = 1000.0 / 60; // 每帧的时间
-	double cur_time; // 稳定帧率用的计时器
-	uint32_t video_buffer[frame_width * frame_height]; // 当前帧的像素数据
-	// 以下均为内部寄存器、存储区
-	uint16_t v, t;             // PPU 内部寄存器v, t
-	uint8_t fineX;             // 内部寄存器，8x8图块中的X列
-	bool w;                    // 内部寄存器，用于判断第一次、第二次读写
-	bool odd_frame;            // 奇偶帧
-	uint32_t frames_count = 0; // 统计帧数
-	struct {
-		uint8_t id;
-		uint8_t Y, tileIdx, Attr, X;     // 当前行绘制的精灵的X, Y坐标、块号、属性
-		uint8_t tileL, tileH;            // 精灵图块数据
-	} secOAM[8], sprTile[8];             // 内部寄存器，保存渲染的精灵，每行最多8个精灵
-	uint16_t bgShiftL, bgShiftH;         // 内部移位寄存器，存放当前行2块的背景图块像素数据
-	uint8_t bgL, bgH, nt, at;            // 存放当前行背景图块的像素数据，nt存放的是图块表中的编号，at是背景图块的调色板指针高两位
-	uint8_t atShiftL, atShiftH;          // 内部移位寄存器，存放当前行2块的背景图块的调色板指针高两位
-	bool atL, atH;                       // L, H组成当前行当前背景图块的调色板指针高两位
-	uint16_t internal_load_addr;         // PPU读取像素数据用的地址
-	uint8_t PPUDATA_buffer;              // 读的数据缓冲区
-	static const uint32_t palette[0x40]; // 背景、精灵调色板
-	CPU *cpu;
-	// 工作流程
-	void step();                         // 执行一个ppu周期
-	void pixel(unsigned x, unsigned y);  // 绘制渲染区的一个像素点
-	void clear_OAM();                    // 清除OAM`
-	void eval_sprites(unsigned y);       // 获得下一行的8个精灵信息
-	void load_sprites(unsigned y);       // 存储下一行的8个精灵信息
-}
-\end{cppcode}
+PPU类也包含了寄存器、内部寄存器，以及主要工作流程的方法。
+%\begin{cppcode}
+%class PPU {
+%private:
+	%uint32_t cycles; // PPU的时钟周期数，是cpu的三倍
+	%__PPUMem__ mem;
+	%PPURegister PPUCTRL, PPUMASK, PPUSTATUS, // PPU通用寄存器
+				%OAMADDR, OAMDATA, PPUSCROLL,
+				%PPUADDR, PPUDATA, OAMDMA;
+	%uint8_t OAM[0x100]; // 256B的OAM精灵存储区
+	%const static uint16_t frame_width = 341, frame_height = 262; // NTSC, 60fps
+	%const static uint16_t screen_width = 256, screen_height = 240; // 每帧图像的大小
+	%constexpr static double frame_duration = 1000.0 / 60; // 每帧的时间
+	%double cur_time; // 稳定帧率用的计时器
+	%uint32_t video_buffer[frame_width * frame_height]; // 当前帧的像素数据
+	%// 以下均为内部寄存器、存储区
+	%uint16_t v, t;             // PPU 内部寄存器v, t
+	%uint8_t fineX;             // 内部寄存器，8x8图块中的X列
+	%bool w;                    // 内部寄存器，用于判断第一次、第二次读写
+	%bool odd_frame;            // 奇偶帧
+	%uint32_t frames_count = 0; // 统计帧数
+	%struct {
+		%uint8_t id;
+		%uint8_t Y, tileIdx, Attr, X;     // 当前行绘制的精灵的X, Y坐标、块号、属性
+		%uint8_t tileL, tileH;            // 精灵图块数据
+	%} secOAM[8], sprTile[8];             // 内部寄存器，保存渲染的精灵，每行最多8个精灵
+	%uint16_t bgShiftL, bgShiftH;         // 内部移位寄存器，存放当前行2块的背景图块像素数据
+	%uint8_t bgL, bgH, nt, at;            // 存放当前行背景图块的像素数据，nt存放的是图块表中的编号，at是背景图块的调色板指针高两位
+	%uint8_t atShiftL, atShiftH;          // 内部移位寄存器，存放当前行2块的背景图块的调色板指针高两位
+	%bool atL, atH;                       // L, H组成当前行当前背景图块的调色板指针高两位
+	%uint16_t internal_load_addr;         // PPU读取像素数据用的地址
+	%uint8_t PPUDATA_buffer;              // 读的数据缓冲区
+	%static const uint32_t palette[0x40]; // 背景、精灵调色板
+	%CPU *cpu;
+	%// 工作流程
+	%void step();                         // 执行一个ppu周期
+	%void pixel(unsigned x, unsigned y);  // 绘制渲染区的一个像素点
+	%void clear_OAM();                    // 清除OAM`
+	%void eval_sprites(unsigned y);       // 获得下一行的8个精灵信息
+	%void load_sprites(unsigned y);       // 存储下一行的8个精灵信息
+%}
+%\end{cppcode}
 \subsubsection{主要工作流程实现}
-PPU绘图的实现主要调用了step()函数，每一个PPU时钟周期执行一次，根据当前不同的行数、列数进行不同的操作（取数据、计算像素值）：
-\begin{cppcode}
-void PPU::step() {
-	// 根据当前PPU总周期数来计算行数、列数
-	uint16_t    scanline = cycles / frame_width,
-				dot = cycles % frame_width;
-	if( (scanline >= 0 && scanline < 240) || scanline == 261) {
-		// 精灵
-		switch (dot) {
-			case 1: clear_OAM(); if(scanline == 261) PPUSTATUS.S = PPUSTATUS.O = 0; break;
-			case 257: eval_sprites(scanline); break;
-			case 321: load_sprites(scanline); break;
-		}
-		// 背景
-		switch (dot) {
-			case 2 ... 255:
-			case 322 ... 337:
-				pixel(dot - 2, scanline);
-				... // 省略一些代码
-			case         256:  pixel(dot - 2, scanline); bgH = mem[internal_load_addr]; v_scroll(); break;  // Vertical bump.
-			case         257:  pixel(dot - 2, scanline); reload_shift(); h_update(); break;  // Update horizontal position.
-			case 280 ... 304:  if (scanline == 261)            v_update(); break;  // Update vertical position.
-			case             1:  internal_load_addr = get_nt_addr(); if(scanline == 261) PPUSTATUS.V = 0; break;
-			case 321: case 339:  internal_load_addr = get_nt_addr(); break;
-			case           338:  nt = mem[internal_load_addr]; break;
-			case           340:  nt = mem[internal_load_addr]; if(scanline == 261 && rendering() && odd_frame) ++cycles; break;
-		}
-	}
-	else if(scanline == 240 && dot == 0) { // 形成完整的一帧图像
-		// 绘制一帧
-		SDL_UpdateTexture(texture, NULL, video_buffer, sizeof(uint32_t) * screen_width);
-		SDL_RenderCopy(renderer, texture, NULL, NULL); SDL_RenderPresent(renderer);
-		SDL_PollEvent(&event); // 捕捉事件（按键）
-		odd_frame = !odd_frame; ++frames_count;
-	} else if(scanline == 241 && dot == 1) { // 发出VBlank信号
-		PPUSTATUS.V = 1; if(PPUCTRL.V) cpu->nmi = true;
-	}
-	if(++cycles >= (frame_width * frame_height)) {
-		cycles %= (frame_width * frame_height); odd_frame = !odd_frame;
-	}
-}
-\end{cppcode}
-而在渲染部分，都调用了pixel()函数，用于计算当前行、列 的像素值：
-\begin{cppcode}
-	uint8_t draw_palette = 0, spr_palette = 0; // 调色板指针
-	bool spr_priority = 0;
-	if(y < 240 && x >= 0 && x < 256) {
-		// 背景
-		if (PPUMASK.b && !(!PPUMASK.m && x < 8)) {
-			draw_palette = GetBit(bgShiftH, 15 - fineX) << 1 |
-			               GetBit(bgShiftL, 15 - fineX);
-			if (draw_palette)
-				draw_palette |= (GetBit(atShiftH, 7 - fineX) << 1 |
-				                 GetBit(atShiftL, 7 - fineX)) << 2;
-		}
-		// 精灵
-		if (PPUMASK.s && !(!PPUMASK.M && x < 8))
-			for(int i = 7; i >= 0; --i) {
-				if(sprTile[i].id == 64) continue; // 空
-				unsigned sprX = x - sprTile[i].X;
-				if(sprX >= 8) continue;
-				if(sprTile[i].Attr & 0x40) sprX ^= 7; // 水平翻转
-				uint8_t p = GetBit(sprTile[i].tileH, 7 - sprX) << 1 |
-				            GetBit(sprTile[i].tileL, 7 - sprX);
-				if(p == 0) continue;
-				// sprite 0的非零像素覆盖背景的非零像素
-				if(sprTile[i].id == 0 && draw_palette && x != 255) PPUSTATUS.S = 1;
-				p |= (sprTile[i].Attr & 0x03) << 2;
-				spr_palette = p + 0x10;                // sprite的palette在0x3f10
-				spr_priority = sprTile[i].Attr & 0x20; // 精灵在背景前面还是后面
-			}
-		if(spr_palette && (draw_palette == 0 || spr_priority == 0))
-			draw_palette = spr_palette;
-		video_buffer[screen_width * y + x] = palette[mem[0x3F00 + (rendering() ? draw_palette : 0)]]; // 存储像素点
-	}
-	// 更新内部移位寄存器的值
-	bgShiftL <<= 1; bgShiftH <<= 1;
-	atShiftL = (atShiftL << 1) | atL;
-	atShiftH = (atShiftH << 1) | atH;
-}
-\end{cppcode}
+PPU绘图过程中，每一个PPU时钟周期执行一次，根据当前不同的行数、列数进行不同的操作（取数据、计算像素值）。在渲染阶段，PPU周期性地获取背景数据、精灵数据存放到内部寄存器，期间计算当前行、列的像素值供绘图使用。
+
+%\begin{cppcode}
+%void PPU::step() {
+	%// 根据当前PPU总周期数来计算行数、列数
+	%uint16_t    scanline = cycles / frame_width,
+				%dot = cycles % frame_width;
+	%if( (scanline >= 0 && scanline < 240) || scanline == 261) {
+		%// 精灵
+		%switch (dot) {
+			%case 1: clear_OAM(); if(scanline == 261) PPUSTATUS.S = PPUSTATUS.O = 0; break;
+			%case 257: eval_sprites(scanline); break;
+			%case 321: load_sprites(scanline); break;
+		%}
+		%// 背景
+		%switch (dot) {
+			%case 2 ... 255:
+			%case 322 ... 337:
+				%pixel(dot - 2, scanline);
+				%... // 省略一些代码
+			%case         256:  pixel(dot - 2, scanline); bgH = mem[internal_load_addr]; v_scroll(); break;  // Vertical bump.
+			%case         257:  pixel(dot - 2, scanline); reload_shift(); h_update(); break;  // Update horizontal position.
+			%case 280 ... 304:  if (scanline == 261)            v_update(); break;  // Update vertical position.
+			%case             1:  internal_load_addr = get_nt_addr(); if(scanline == 261) PPUSTATUS.V = 0; break;
+			%case 321: case 339:  internal_load_addr = get_nt_addr(); break;
+			%case           338:  nt = mem[internal_load_addr]; break;
+			%case           340:  nt = mem[internal_load_addr]; if(scanline == 261 && rendering() && odd_frame) ++cycles; break;
+		%}
+	%}
+	%else if(scanline == 240 && dot == 0) { // 形成完整的一帧图像
+		%// 绘制一帧
+		%SDL_UpdateTexture(texture, NULL, video_buffer, sizeof(uint32_t) * screen_width);
+		%SDL_RenderCopy(renderer, texture, NULL, NULL); SDL_RenderPresent(renderer);
+		%SDL_PollEvent(&event); // 捕捉事件（按键）
+		%odd_frame = !odd_frame; ++frames_count;
+	%} else if(scanline == 241 && dot == 1) { // 发出VBlank信号
+		%PPUSTATUS.V = 1; if(PPUCTRL.V) cpu->nmi = true;
+	%}
+	%if(++cycles >= (frame_width * frame_height)) {
+		%cycles %= (frame_width * frame_height); odd_frame = !odd_frame;
+	%}
+%}
+%\end{cppcode}
+
+%\begin{cppcode}
+	%uint8_t draw_palette = 0, spr_palette = 0; // 调色板指针
+	%bool spr_priority = 0;
+	%if(y < 240 && x >= 0 && x < 256) {
+		%// 背景
+		%if (PPUMASK.b && !(!PPUMASK.m && x < 8)) {
+			%draw_palette = GetBit(bgShiftH, 15 - fineX) << 1 |
+						   %GetBit(bgShiftL, 15 - fineX);
+			%if (draw_palette)
+				%draw_palette |= (GetBit(atShiftH, 7 - fineX) << 1 |
+								 %GetBit(atShiftL, 7 - fineX)) << 2;
+		%}
+		%// 精灵
+		%if (PPUMASK.s && !(!PPUMASK.M && x < 8))
+			%for(int i = 7; i >= 0; --i) {
+				%if(sprTile[i].id == 64) continue; // 空
+				%unsigned sprX = x - sprTile[i].X;
+				%if(sprX >= 8) continue;
+				%if(sprTile[i].Attr & 0x40) sprX ^= 7; // 水平翻转
+				%uint8_t p = GetBit(sprTile[i].tileH, 7 - sprX) << 1 |
+							%GetBit(sprTile[i].tileL, 7 - sprX);
+				%if(p == 0) continue;
+				%// sprite 0的非零像素覆盖背景的非零像素
+				%if(sprTile[i].id == 0 && draw_palette && x != 255) PPUSTATUS.S = 1;
+				%p |= (sprTile[i].Attr & 0x03) << 2;
+				%spr_palette = p + 0x10;                // sprite的palette在0x3f10
+				%spr_priority = sprTile[i].Attr & 0x20; // 精灵在背景前面还是后面
+			%}
+		%if(spr_palette && (draw_palette == 0 || spr_priority == 0))
+			%draw_palette = spr_palette;
+		%video_buffer[screen_width * y + x] = palette[mem[0x3F00 + (rendering() ? draw_palette : 0)]]; // 存储像素点
+	%}
+	%// 更新内部移位寄存器的值
+	%bgShiftL <<= 1; bgShiftH <<= 1;
+	%atShiftL = (atShiftL << 1) | atL;
+	%atShiftH = (atShiftH << 1) | atH;
+%}
+%\end{cppcode}
 \subsection{卡带}
-卡带的实现就比较简单了，其类定义如下：
-\begin{cppcode}
-class Cartridge {
-public:
-	bool LoadRomFile(CPU &cpu, PPU &ppu, const std::string & filename);
-private:
-	struct {                    // ROM文件的文件头定义
-		uint8_t INes[4];        // 应为0x4e 0x45 0x53 0x1a
-		uint8_t PRGRomBankCnt;  // PRG ROM的大小（块数），单位16K一块
-		uint8_t CHRRomBankCnt;  // CHR ROM的大小（块数），单位8K一块，0表示使用CHR RAM
-		uint8_t ROMControl[2];  // ROM控制位
-		uint8_t PRGRamBankCnt;  // PRG RAM的大小（块数）,单位8K一块，若为0则代表1块，8k
-		uint8_t Reserved[7];    // 保留位，全零
-	} header;
-	std::string filename;       // ROM文件名
-};
-\end{cppcode}
-LoadRomFile方法将ROM文件加载进内存，主要代码如下：
-\begin{cppcode}
-bool Cartridge::LoadRomFile(CPU &cpu, PPU &ppu, const std::string &filename) {
-	this->filename = filename;
-	FILE *fp = fopen(filename.c_str(), "rb"); // 打开文件
-	if(fp == NULL) {
-		printf("open file "); perror(filename.c_str());
-		return false;
-	}
-	fread((void*)&header, sizeof(header), 1, fp); // 读取头
-	__CPUMem__::iterator cpuRamIt = cpu.mem.begin(); // 内存迭代器
-	__PPUMem__::iterator ppuRamIt = ppu.mem.begin();
-	if(! GetBit(header.ROMControl[0], 3))  // 名称表的水平、垂直映射
-		GetBit(header.ROMControl[0], 0) ?  ppu.mem.setVerticalMirroring() : ppu.mem.setHorizontalMirroring();
-	// Mapper
-	switch (JointBits(GetUpperBits(header.ROMControl[1]),
-	                  GetUpperBits(header.ROMControl[0]))) {
-		case 0: case 64: { // Mapper 0
-			uint8_t PRGRomData[0x4000];
-			fread((void*)PRGRomData, sizeof(PRGRomData), 1, fp);
-			std::copy(PRGRomData, PRGRomData + sizeof(PRGRomData), cpuRamIt + 0x8000); // 复制ROM数据到CPU内存中
-			if(header.PRGRomBankCnt > 1)
-			    fread((void*)PRGRomData, sizeof(PRGRomData), 1, fp);
-			std::copy(PRGRomData, PRGRomData + sizeof(PRGRomData), cpuRamIt + 0xc000);
-			uint8_t CHRRomData[0x2000];
-			fread((void*)CHRRomData, sizeof(CHRRomData), 1, fp); // 复制图像数据到CPU内存中
-			std::copy(CHRRomData, CHRRomData + sizeof(CHRRomData), ppuRamIt + 0x0000);
-			break;
-		}
-	}
-	fclose(fp);
-	return true;
-}
-\end{cppcode}
+卡带的实现就比较简单了，包含了NES程序文件的头部信息。主要作用是将NES程序文件读取到CPU/PPU的内存中。
+
+读取文件的时候首先判断文件头，看看是否为合法的NES文件，接着根据文件头信息得知程序块数、图像数据块数，将其复制到对应的内存区域中。
+%\begin{cppcode}
+%class Cartridge {
+%public:
+	%bool LoadRomFile(CPU &cpu, PPU &ppu, const std::string & filename);
+%private:
+	%struct {                    // ROM文件的文件头定义
+		%uint8_t INes[4];        // 应为0x4e 0x45 0x53 0x1a
+		%uint8_t PRGRomBankCnt;  // PRG ROM的大小（块数），单位16K一块
+		%uint8_t CHRRomBankCnt;  // CHR ROM的大小（块数），单位8K一块，0表示使用CHR RAM
+		%uint8_t ROMControl[2];  // ROM控制位
+		%uint8_t PRGRamBankCnt;  // PRG RAM的大小（块数）,单位8K一块，若为0则代表1块，8k
+		%uint8_t Reserved[7];    // 保留位，全零
+	%} header;
+	%std::string filename;       // ROM文件名
+%};
+%\end{cppcode}
+
+%\begin{cppcode}
+%bool Cartridge::LoadRomFile(CPU &cpu, PPU &ppu, const std::string &filename) {
+	%this->filename = filename;
+	%FILE *fp = fopen(filename.c_str(), "rb"); // 打开文件
+	%if(fp == NULL) {
+		%printf("open file "); perror(filename.c_str());
+		%return false;
+	%}
+	%fread((void*)&header, sizeof(header), 1, fp); // 读取头
+	%__CPUMem__::iterator cpuRamIt = cpu.mem.begin(); // 内存迭代器
+	%__PPUMem__::iterator ppuRamIt = ppu.mem.begin();
+	%if(! GetBit(header.ROMControl[0], 3))  // 名称表的水平、垂直映射
+		%GetBit(header.ROMControl[0], 0) ?  ppu.mem.setVerticalMirroring() : ppu.mem.setHorizontalMirroring();
+	%// Mapper
+	%switch (JointBits(GetUpperBits(header.ROMControl[1]),
+					  %GetUpperBits(header.ROMControl[0]))) {
+		%case 0: case 64: { // Mapper 0
+			%uint8_t PRGRomData[0x4000];
+			%fread((void*)PRGRomData, sizeof(PRGRomData), 1, fp);
+			%std::copy(PRGRomData, PRGRomData + sizeof(PRGRomData), cpuRamIt + 0x8000); // 复制ROM数据到CPU内存中
+			%if(header.PRGRomBankCnt > 1)
+				%fread((void*)PRGRomData, sizeof(PRGRomData), 1, fp);
+			%std::copy(PRGRomData, PRGRomData + sizeof(PRGRomData), cpuRamIt + 0xc000);
+			%uint8_t CHRRomData[0x2000];
+			%fread((void*)CHRRomData, sizeof(CHRRomData), 1, fp); // 复制图像数据到CPU内存中
+			%std::copy(CHRRomData, CHRRomData + sizeof(CHRRomData), ppuRamIt + 0x0000);
+			%break;
+		%}
+	%}
+	%fclose(fp);
+	%return true;
+%}
+%\end{cppcode}
 
 \subsection{标准控制器}
-标准控制器采用移位寄存器实现，类定义如下：
-\begin{cppcode}
-class Joypad {
-private:
-	uint8_t const *keypad;
-	// R, L, D, U, St, Sel, B, A
-	uint8_t joypad_bits[2];                // 手柄1、手柄2移位寄存器
-	bool strobe; // 控制是否读入键位
-public:
-	// n为0或者1，表明操作第几个手柄
-	uint8_t read_joypad_status(int n = 0);
-	void write_joypad_status(bool v);
-	uint8_t get_joypad_status(int n = 0);  // 读取键盘上的按键状态
-};
-\end{cppcode}
+标准控制器模拟移位寄存器实现，分别提供读、重置功能。当重置手柄的时候，利用SDL引擎中按键事件相关接口，获得8个键按下的状态，设置为寄存器的值；读取手柄的时候，位移一位，读取一位。
 
-读、写手柄状态寄存器分别为read\_joypad\_status()和write\_joypad\_status()，主要代码如下：
+%\begin{cppcode}
+%class Joypad {
+%private:
+	%uint8_t const *keypad;
+	%// R, L, D, U, St, Sel, B, A
+	%uint8_t joypad_bits[2];                // 手柄1、手柄2移位寄存器
+	%bool strobe; // 控制是否读入键位
+%public:
+	%// n为0或者1，表明操作第几个手柄
+	%uint8_t read_joypad_status(int n = 0);
+	%void write_joypad_status(bool v);
+	%uint8_t get_joypad_status(int n = 0);  // 读取键盘上的按键状态
+%};
+%\end{cppcode}
 
-\begin{cppcode}
-uint8_t Joypad::read_joypad_status(int n) {
-	// 若S为高电平，则读取A键，由于硬件问题高第二位为1
-	if(strobe) return 0x40 | (get_joypad_status(n) & 1);
-	// 每次读取一位并右移一位
-	uint8_t key_status = 0x40 | (joypad_bits[n] & 1);
-	joypad_bits[n] = 0x80 | (joypad_bits[n] >> 1);
-	return key_status;
-}
-void Joypad::write_joypad_status(bool v) {
-	if(strobe && !v) // 下降沿重载
-		for(int i = 0; i < 2; ++i) joypad_bits[i] = get_joypad_status(i);
-	strobe = v;
-}
-\end{cppcode}
+%读、写手柄状态寄存器分别为read\_joypad\_status()和write\_joypad\_status()，主要代码如下：
 
-\section{单元测试}
-在开发过程中，需要对某些模块例如CPU进行单元测试来保证程序正确性，具体做法是编写测试用的汇编指令，执行完后检查各个寄存器的值是否符合预期，下面是截取某一段单元测试片段：
-\begin{cppcode}
-TEST(CPUTest, opTest) {
-	CPU cpu; PPU ppu;
-	cpu.connectTo(ppu); ppu.connectTo(cpu);
-	uint8_t &X = cpu.getX(), &Y = cpu.getY(),
-			&SP = cpu.getSP(), &A = cpu.getA();
-	uint16_t &PC = cpu.getPC();
-	ProcessorStatus &P = cpu.getP();
-	EXPECT_TRUE(cart.LoadRomFile(cpu, ppu, "./test.nes"));
-	EXPECT_TRUE(cart.PrintHeader());
-	cpu.Reset();
-	// 测试是否正常读取指令
-	EXPECT_EQ(cpu.Read8(PC), 0xf8); // SED
-	// 开始执行
-	EXPECT_EQ(cpu.Execute(), 2);    // sed
-	EXPECT_TRUE(P.Decimal);
-	EXPECT_EQ(cpu.Execute(), 2);    // cld
-	EXPECT_FALSE(P.Decimal);
-	A = 0xff;
-	EXPECT_EQ(cpu.Execute(), 2);    // asl
-	// 测试各个寄存器的值是否符合预期
-	EXPECT_EQ(A, 0xfe); EXPECT_FALSE(P.Zero); EXPECT_TRUE(P.Negative); EXPECT_TRUE(P.Carry);
-	cpu.Write(0x0066, 0);
-	EXPECT_EQ(cpu.Execute(), 5);    // asl $66
-	EXPECT_EQ(cpu.Read8(0x66), 0x0); EXPECT_TRUE(P.Zero); EXPECT_FALSE(P.Negative); EXPECT_FALSE(P.Carry);
-	X = 1;
-	cpu.Write(0x0000, 0x80);
-	EXPECT_EQ(cpu.Execute(), 6);    // asl $ff,X
-	EXPECT_EQ(cpu.Read8(0x66), 0x0); EXPECT_TRUE(P.Zero); EXPECT_FALSE(P.Negative); EXPECT_TRUE(P.Carry);
-	... // 省略余下代码
-}
-\end{cppcode}
+%\begin{cppcode}
+%uint8_t Joypad::read_joypad_status(int n) {
+	%// 若S为高电平，则读取A键，由于硬件问题高第二位为1
+	%if(strobe) return 0x40 | (get_joypad_status(n) & 1);
+	%// 每次读取一位并右移一位
+	%uint8_t key_status = 0x40 | (joypad_bits[n] & 1);
+	%joypad_bits[n] = 0x80 | (joypad_bits[n] >> 1);
+	%return key_status;
+%}
+%void Joypad::write_joypad_status(bool v) {
+	%if(strobe && !v) // 下降沿重载
+		%for(int i = 0; i < 2; ++i) joypad_bits[i] = get_joypad_status(i);
+	%strobe = v;
+%}
+%\end{cppcode}
+
+\section{系统测试}
+在开发过程中，需要对某些模块例如CPU进行单元测试来保证程序正确性，具体做法是编写测试用的汇编指令，执行完后检查各个寄存器的值是否符合预期。
+
+除了自己编写单元测试，也可以在网络上获得一些CPU指令测试ROM，如下图为测试操作码和非官方操作码的结果，可以看到通过所有测试。
+
+\begin{figure}[h]
+	\centering
+		\begin{subfigure}[b]{0.49\textwidth}
+			\includegraphics[width=\textwidth]{images/run_all_tests_normal_ops.png}
+			\caption{normal ops test}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.49\textwidth}
+			\includegraphics[width=\textwidth]{images/run_all_tests_invalid_ops.png}
+			\caption{invalid ops test}
+		\end{subfigure}
+		\caption{CPU模块指令测试}
+		\label{fig:ops_test}
+\end{figure}
+%\begin{cppcode}
+%TEST(CPUTest, opTest) {
+	%CPU cpu; PPU ppu;
+	%cpu.connectTo(ppu); ppu.connectTo(cpu);
+	%uint8_t &X = cpu.getX(), &Y = cpu.getY(),
+			%&SP = cpu.getSP(), &A = cpu.getA();
+	%uint16_t &PC = cpu.getPC();
+	%ProcessorStatus &P = cpu.getP();
+	%EXPECT_TRUE(cart.LoadRomFile(cpu, ppu, "./test.nes"));
+	%EXPECT_TRUE(cart.PrintHeader());
+	%cpu.Reset();
+	%// 测试是否正常读取指令
+	%EXPECT_EQ(cpu.Read8(PC), 0xf8); // SED
+	%// 开始执行
+	%EXPECT_EQ(cpu.Execute(), 2);    // sed
+	%EXPECT_TRUE(P.Decimal);
+	%EXPECT_EQ(cpu.Execute(), 2);    // cld
+	%EXPECT_FALSE(P.Decimal);
+	%A = 0xff;
+	%EXPECT_EQ(cpu.Execute(), 2);    // asl
+	%// 测试各个寄存器的值是否符合预期
+	%EXPECT_EQ(A, 0xfe); EXPECT_FALSE(P.Zero); EXPECT_TRUE(P.Negative); EXPECT_TRUE(P.Carry);
+	%cpu.Write(0x0066, 0);
+	%EXPECT_EQ(cpu.Execute(), 5);    // asl $66
+	%EXPECT_EQ(cpu.Read8(0x66), 0x0); EXPECT_TRUE(P.Zero); EXPECT_FALSE(P.Negative); EXPECT_FALSE(P.Carry);
+	%X = 1;
+	%cpu.Write(0x0000, 0x80);
+	%EXPECT_EQ(cpu.Execute(), 6);    // asl $ff,X
+	%EXPECT_EQ(cpu.Read8(0x66), 0x0); EXPECT_TRUE(P.Zero); EXPECT_FALSE(P.Negative); EXPECT_TRUE(P.Carry);
+	%... // 省略余下代码
+%}
+%\end{cppcode}
+
+利用Valgrind进行性能分析，对常用指令进行优化后，整个系统去掉PPU模块后，在2100MHz主频的电脑上跑出440Mhz的频率，是原系统的248倍；加上PPU模块后，每秒渲染帧数达400帧，是原系统的6.7倍。
+
+最后看看整个系统的预期结果，一些经典游戏能在本系统上顺利运行、游玩。
+
+\begin{figure}[h]
+	\centering
+		\begin{subfigure}[b]{0.49\textwidth}
+			\includegraphics[width=\textwidth]{images/super_mario_bros.png}
+			\caption{超级马里奥兄弟}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.49\textwidth}
+			\includegraphics[width=\textwidth]{images/pac_man.png}
+			\caption{吃豆人}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.49\textwidth}
+			\includegraphics[width=\textwidth]{images/F1.png}
+			\caption{F1赛车}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.49\textwidth}
+			\includegraphics[width=\textwidth]{images/1942.png}
+			\caption{1942}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.49\textwidth}
+			\includegraphics[width=\textwidth]{images/Excitebike.png}
+			\caption{摩托}
+		\end{subfigure}
+		\begin{subfigure}[b]{0.49\textwidth}
+			\includegraphics[width=\textwidth]{images/功夫.png}
+			\caption{功夫}
+		\end{subfigure}
+		\caption{本模拟器模拟的一些经典游戏}
+		\label{fig:goal}
+\end{figure}
 
 \section{总结}
 通过实现游戏模拟器来深入理解计算机原理，是一个不错的选择。模拟器的实现，使得我在今后程序开发的道路上越走越深。
@@ -1073,7 +1102,7 @@ TEST(CPUTest, opTest) {
 
 在这几个月的毕业设计过程中，本人查阅了许多资料，接触到许多新东西，对自身技能也提高了许多。自己独立完成了整个系统的设计与实现，提高了自己分析问题和解决问题的能力，对于如何调试程序也有了深刻的理解。
 
-由于时间问题和自身经验不足，本系统有以下几个部分需要完善：
+比较遗憾的是，由于时间问题和自身经验的不足，本课题还未实现Mapper\footnote{能够对换卡带中的程序ROM到CPU内存中，用来运行大容量游戏}，声音模块，实现它们也将是一件有意思的事情。 本系统有以下几个部分需要完善：
 \begin{enumerate}
 \item 实现常用的Mapper
 \item 实现APU音频模块
